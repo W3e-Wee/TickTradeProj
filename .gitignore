@@ -1,0 +1,81 @@
+# Generated build output
+/build/
+/obj/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# Local secrets and credentials (example.env remains trackable)
+.env
+.env.*
+*.env
+!config/example.env
+.aws/
+.ssh/
+secrets/
+credentials.json
+secrets.json
+*.credentials.local
+*.secret.local
+*.secret
+*.credentials
+*.pem
+*.p12
+*.pfx
+*.key
+id_rsa
+id_ed25519
+
+# Temporary files and generated archives; result/evidence files are not ignored
+*.tmp
+*.temp
+*.tmp.log
+*.log.tmp
+*.bak
+*.orig
+*.tmp.zip
+*.tmp.tar
+*.tmp.tar.gz
+*.tmp.tgz
+benchmark-*.zip
+benchmark-*.tar.gz
+
+
+# Large coursework datasets: share separately with groupmates
+# Keep small test20 CSVs and result CSVs trackable
+stress_full*.csv
+dev_1M*.csv
+dev1M*.csv
+
+# Local Pi evidence backup directory
+/pi-evidence-backups/
+
+# Project backup archives
+Grp05-*.tar.gz
+Grp05-*.tgz
+Grp05-*.zip
+
+# Final submission archive: distribute/submit separately
+UoG-PMCOA.zip
