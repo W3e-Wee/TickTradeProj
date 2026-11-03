@@ -1,0 +1,5 @@
+version,trade,signal,processing_duration_us,trigger_price,execution_price,decision,holding_before,holding_after,cash_pnl_after
+baseline,7,BUY,0.1,75436.94000000,75436.94000000,filled_at_trigger_price,0,1,-75436.94000000
+baseline,10,SELL,0.2,75436.93000000,75436.93000000,filled_at_trigger_price,1,0,-0.01000000
+fast,7,BUY,0.3,75436.94000000,75436.94000000,filled_at_trigger_price,0,1,-75436.94000000
+fast,10,SELL,0.2,75436.93000000,75436.93000000,filled_at_trigger_price,1,0,-0.01000000

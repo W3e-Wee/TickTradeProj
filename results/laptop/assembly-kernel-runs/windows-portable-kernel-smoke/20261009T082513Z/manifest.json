@@ -1,0 +1,51 @@
+{
+  "platform_label": "windows-portable-kernel-smoke",
+  "mode": "benchmark",
+  "implementation": "portable_c_fallback",
+  "native_aarch64_execution": false,
+  "host_os": "Windows-11-10.0.26200-SP0",
+  "architecture": "AMD64",
+  "compiler_path": "C:\\msys64\\ucrt64\\bin\\gcc.EXE",
+  "compiler_version": "gcc.EXE (Rev3, Built by MSYS2 project) 16.2.0",
+  "flags": [
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-O3",
+    "-Iinclude",
+    "-Iprovided"
+  ],
+  "command": [
+    "C:\\msys64\\ucrt64\\bin\\gcc.EXE",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Werror",
+    "-O3",
+    "-Iinclude",
+    "-Iprovided",
+    "asm/aarch64_dotprod_ref.c",
+    "asm/aarch64_dotprod_bench.c",
+    "-o",
+    "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\build\\asm-kernel\\asm_kernel.exe"
+  ],
+  "source_sha256": {
+    "asm\\aarch64_dotprod_ref.c": "0a7c8a9f96a7ee403208063ebe9aac1a37d3a9467789d8d8307ecb11c7c7169c",
+    "asm\\aarch64_dotprod_bench.c": "4a8fe09f58ccf95d6c583b8429a2b2589991278c52650b6c202748822020fde0",
+    "include\\aarch64_dotprod.h": "aa2870289e9b1627deb79d0592f3cd1df880a7e44a682b43373afdd8dfe53752"
+  },
+  "repeats": 5,
+  "elements_per_call": 262144,
+  "calls_per_repeat": 128,
+  "cpu_governors": {
+    "host": "not_available_on_host"
+  },
+  "taskset_requested_cpus": null,
+  "taskset_used": false,
+  "datetime_utc": "2026-10-09T08:25:14Z",
+  "benchmark_stdout": "assembly kernel correctness: PASS (zero, one, fixed, random, repeated, boundary, wraparound)\nkernel,repeat,elements,calls,elapsed_ns,checksum\nportable_c_fallback,1,262144,128,27034900,14406837647454548480\nc_reference,1,262144,128,22264300,14406837647454548480\nc_reference,2,262144,128,26539100,14406837647454548480\nportable_c_fallback,2,262144,128,25494000,14406837647454548480\nportable_c_fallback,3,262144,128,21087900,14406837647454548480\nc_reference,3,262144,128,24644800,14406837647454548480\nc_reference,4,262144,128,20653000,14406837647454548480\nportable_c_fallback,4,262144,128,32298800,14406837647454548480\nportable_c_fallback,5,262144,128,28815600,14406837647454548480\nc_reference,5,262144,128,34841800,14406837647454548480\n# observable_checksum=14406837647454548480\n",
+  "status": "host fallback only; Pi benchmark pending"
+}

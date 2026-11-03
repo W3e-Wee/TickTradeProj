@@ -1,0 +1,37 @@
+{
+  "command": [
+    "C:\\msys64\\ucrt64\\bin\\gcc.EXE",
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-O2",
+    "-DNDEBUG",
+    "-Iinclude",
+    "-S",
+    "src/market_baseline.c",
+    "-o",
+    "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\results\\laptop\\assembly-runs\\workflow-test\\20261009T042558Z\\assembly\\v1_baseline_strtok_running_double_heap_O2.s"
+  ],
+  "compiler_path": "C:\\msys64\\ucrt64\\bin\\gcc.EXE",
+  "compiler_version": "gcc.EXE (Rev3, Built by MSYS2 project) 16.2.0",
+  "source": "src/market_baseline.c",
+  "source_hashes": {
+    "src/market_baseline.c": "ec6496aa206f5b4674bb461383d320f44c03a2d87a27e162f13bb593c93236ce"
+  },
+  "flags": [
+    "-std=c11",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-O2",
+    "-DNDEBUG",
+    "-Iinclude"
+  ],
+  "architecture": "AMD64",
+  "host_os": "Windows-11-10.0.26200-SP0",
+  "is_pi": false,
+  "datetime_utc": "2026-10-09T04:26:01Z",
+  "assembly_path": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\results\\laptop\\assembly-runs\\workflow-test\\20261009T042558Z\\assembly\\v1_baseline_strtok_running_double_heap_O2.s",
+  "status": "host assembly only; Pi AArch64 output pending"
+}

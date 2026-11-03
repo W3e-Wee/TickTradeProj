@@ -1,0 +1,206 @@
+The build-driver failure is fixed locally. The root cause was a flag mismatch inside build(): it added platform flags to the compile flags, then compared them with expected profile flags that omitted those additions. Both now use the same profile flag function. A shared [platform_flags.mk](C:/Users/siamu/Desktop/SIT Trimester 1/Mini Project/Grp05/config/platform_flags.mk) supplies the Linux POSIX flag to the Python driver and Makefile; Windows builds omit it.
+Replay timestamps and the first-timestamp scheduling variable use int64_t. Replay support and its C test include timing.h before other headers. The test command builds debug and release targets before running tests, and replay tests report a clear prerequisite error if executables are missing.
+Local verification passed on Windows x64 using MSYS2 Python and GCC: debug and release builds, all ten replay targets with executable and metadata validation, replay-support C tests, and the quick suite (11 Python tests). This does not validate POSIX visibility, AArch64 executables, or LED access on the Pi.
+Files changed in this repair: [scripts/project.py](C:/Users/siamu/Desktop/SIT Trimester 1/Mini Project/Grp05/scripts/project.py), [Makefile](C:/Users/siamu/Desktop/SIT Trimester 1/Mini Project/Grp05/Makefile), [src/replay_engine.c](C:/Users/siamu/Desktop/SIT Trimester 1/Mini Project/Grp05/src/replay_engine.c), [tests/test_replay.py](C:/Users/siamu/Desktop/SIT Trimester 1/Mini Project/Grp05/tests/test_replay.py), and the shared platform flag configuration. Replay-support include ordering and percentile tests are also retained.
+Pi transfer and clean rebuild
+I don’t have the Pi’s hostname or IP, so the transfer command uses <PI_HOST> as a placeholder. It excludes build outputs, results, and Git metadata, preserving prior Pi evidence:
+rsync -av --exclude build --exclude results --exclude .git ./ hoque@<PI_HOST>:/home/hoque/project/tick-to-trade/Grp05/
+On the Pi:
+cd /home/hoque/project/tick-to-trade/Grp05
+rm -rf build/debug build/release build/variants build/replay build/tests
+python3 scripts/project.py build --profile debug
+python3 scripts/project.py build --profile release
+python3 scripts/project.py test --suite quick
+test "$(find build/replay -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 10
+for exe in build/replay/*.exe; do test -x "$exe" || exit 1; done
+Do not attempt replay until both builds complete, the quick suite passes, the executable-count and executable-permission checks pass, and the driver reports all ten replay metadata sidecars validated.
+Expected replay executables under build/replay/:
+v0_baseline_strtok_running_double_heap_O0.exe
+v1_baseline_strtok_running_double_heap_O2.exe
+v2_helper_sscanf_naive_double_stream_O2.exe
+v3_own_pointer_reader_naive_double_stream_O2.exe
+v4_manual_digit_parser_naive_double_stream_O2.exe
+v5_manual_digit_parser_running_double_stream_O2.exe
+v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+v7_manual_digit_parser_running_double_stream_O3.exe
+v8_manual_running_double_static_trade_array_O2.exe
+v9_manual_running_double_exact_malloc_trade_array_O2.exe
+Replay is not yet confirmed working on the Pi.
+
+  Edited 5 files+114-32Review changesUndoReview
+
+MakefileMakefile+6-3
+config/platform_flags.mkconfig/platform_flags.mk+2-0
+scripts/project.pyscripts/project.py+90-23
+Show 2 more files
+
+
+
+
+10:18 PM
+
+
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ cd /home/hoque/project/tick-to-trade/Grp05
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ rm -rf build/debug build/release build/variants build/replay build/tests
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ python3 scripts/project.py build --profile debug
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -g3 -O0 -Iinclude -D_POSIX_C_SOURCE=200809L src/stage0.c -o /home/hoque/project/tick-to-trade/Grp05/build/debug/stage0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -g3 -O0 -Iinclude -D_POSIX_C_SOURCE=200809L src/market_baseline.c -o /home/hoque/project/tick-to-trade/Grp05/build/debug/market_baseline.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O3 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -g3 -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v0_baseline_strtok_running_double_heap_O0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v1_baseline_strtok_running_double_heap_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+Validated all 10 replay executables and metadata sidecars.
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ python3 scripts/project.py build --profile release
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -O2 -DNDEBUG -Iinclude -D_POSIX_C_SOURCE=200809L src/stage0.c -o /home/hoque/project/tick-to-trade/Grp05/build/release/stage0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -O2 -DNDEBUG -Iinclude -D_POSIX_C_SOURCE=200809L src/market_baseline.c -o /home/hoque/project/tick-to-trade/Grp05/build/release/market_baseline.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O3 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -g3 -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v0_baseline_strtok_running_double_heap_O0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v1_baseline_strtok_running_double_heap_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+Validated all 10 replay executables and metadata sidecars.
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ python3 scripts/project.py test --suite quick
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -g3 -O0 -Iinclude -D_POSIX_C_SOURCE=200809L src/stage0.c -o /home/hoque/project/tick-to-trade/Grp05/build/debug/stage0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -g3 -O0 -Iinclude -D_POSIX_C_SOURCE=200809L src/market_baseline.c -o /home/hoque/project/tick-to-trade/Grp05/build/debug/market_baseline.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O3 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -g3 -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v0_baseline_strtok_running_double_heap_O0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v1_baseline_strtok_running_double_heap_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+Validated all 10 replay executables and metadata sidecars.
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -O2 -DNDEBUG -Iinclude -D_POSIX_C_SOURCE=200809L src/stage0.c -o /home/hoque/project/tick-to-trade/Grp05/build/release/stage0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -O2 -DNDEBUG -Iinclude -D_POSIX_C_SOURCE=200809L src/market_baseline.c -o /home/hoque/project/tick-to-trade/Grp05/build/release/market_baseline.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O3 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -DNDEBUG -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -O2 -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/market_variant.c -o /home/hoque/project/tick-to-trade/Grp05/build/variants/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -g3 -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v0_baseline_strtok_running_double_heap_O0.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=3 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=3 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v1_baseline_strtok_running_double_heap_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=1 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v3_own_pointer_reader_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=0 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c provided/trade_io.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v2_helper_sscanf_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=0 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v4_manual_digit_parser_naive_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v7_manual_digit_parser_running_double_stream_O3.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v5_manual_digit_parser_running_double_stream_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=1 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v8_manual_running_double_static_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=0 -DSTORAGE_KIND=2 -DFIXED_TRADE_CAPACITY=12000000U src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v9_manual_running_double_exact_malloc_trade_array_O2.exe
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -Iinclude -Iprovided -D_POSIX_C_SOURCE=200809L -DNDEBUG -DREADER_KIND=2 -DSMA_KIND=1 -DFIXED_PRICE=1 -DSTORAGE_KIND=0 src/replay_engine.c src/replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/replay/v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+Validated all 10 replay executables and metadata sidecars.
++ /usr/bin/gcc -std=c11 -Wall -Wextra -Wpedantic -Werror -D_POSIX_C_SOURCE=200809L -Iinclude -Iprovided src/replay_support.c tests/test_replay_support.c -o /home/hoque/project/tick-to-trade/Grp05/build/tests/replay_support_tests
+replay support tests: PASS
+test_all_versions_match_independent_synthetic_reference (test_market.MarketTests.test_all_versions_match_independent_synthetic_reference) ... ok
+test_fixed_parser_rejects_precision_loss_and_int64_overflow (test_market.MarketTests.test_fixed_parser_rejects_precision_loss_and_int64_overflow) ... ok
+test_parser_rejects_invalid_input (test_market.MarketTests.test_parser_rejects_invalid_input) ... ok
+test_pointer_and_fast_readers_reject_bad_rows (test_market.MarketTests.test_pointer_and_fast_readers_reject_bad_rows) ... ok
+test_stage0_program (test_market.MarketTests.test_stage0_program) ... ok
+test_storage_capacity_empty_and_allocation_failures (test_market.MarketTests.test_storage_capacity_empty_and_allocation_failures) ... ok
+test_test20_expected_output (test_market.MarketTests.test_test20_expected_output) ... ok
+test_all_replay_versions_process_official_test20_without_drops (test_replay.ReplayTests.test_all_replay_versions_process_official_test20_without_drops) ... ok
+test_primary_and_shadow_paths_are_exposed_and_policy_selectable (test_replay.ReplayTests.test_primary_and_shadow_paths_are_exposed_and_policy_selectable) ... ok
+test_replay_rejects_decreasing_timestamp (test_replay.ReplayTests.test_replay_rejects_decreasing_timestamp) ... ok
+test_speed_schedule_equal_timestamps_and_output_modes (test_replay.ReplayTests.test_speed_schedule_equal_timestamps_and_output_modes) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 3.123s
+
+OK
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ test "$(find build/replay -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 10
+for exe in build/replay/*.exe; do test -x "$exe" || exit 1; done
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ test "$(find build/replay -maxdepth 1 -type f -name '*.exe' | wc -l)" -eq 10
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ for exe in build/replay/*.exe; do test -x "$exe" || exit 1; done
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ ls
+ asm
+ build
+ build.before-pi-rebuild-20261008-152204
+ build.before-replay-20261008-214539
+ build.previous-pi-20261008-153321
+ config
+'dev_1M - Copy (6).csv'
+ docs
+'group_info - Copy (6).txt'
+ include
+ Makefile
+ plots
+ provided
+ python
+ README.md
+ results
+ scripts
+ signals.png
+ src
+ stress_full.csv
+'test20 - Copy (6).csv'
+'test20_expected - Copy (6).txt'
+ tests
+hoque@raspberrypi:~/project/tick-to-trade/Grp05 $ cd build/replay
+hoque@raspberrypi:~/project/tick-to-trade/Grp05/build/replay $ ls
+v0_baseline_strtok_running_double_heap_O0.exe
+v0_baseline_strtok_running_double_heap_O0.exe.json
+v1_baseline_strtok_running_double_heap_O2.exe
+v1_baseline_strtok_running_double_heap_O2.exe.json
+v2_helper_sscanf_naive_double_stream_O2.exe
+v2_helper_sscanf_naive_double_stream_O2.exe.json
+v3_own_pointer_reader_naive_double_stream_O2.exe
+v3_own_pointer_reader_naive_double_stream_O2.exe.json
+v4_manual_digit_parser_naive_double_stream_O2.exe
+v4_manual_digit_parser_naive_double_stream_O2.exe.json
+v5_manual_digit_parser_running_double_stream_O2.exe
+v5_manual_digit_parser_running_double_stream_O2.exe.json
+v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe
+v6_manual_digit_parser_running_fixed_i64_1e8_stream_O2.exe.json
+v7_manual_digit_parser_running_double_stream_O3.exe
+v7_manual_digit_parser_running_double_stream_O3.exe.json
+v8_manual_running_double_static_trade_array_O2.exe
+v8_manual_running_double_static_trade_array_O2.exe.json
+v9_manual_running_double_exact_malloc_trade_array_O2.exe
+v9_manual_running_double_exact_malloc_trade_array_O2.exe.json
+hoque@raspberrypi:~/project/tick-to-trade/Grp05/build/replay $ ^C
+hoque@raspberrypi:~/project/tick-to-trade/Grp05/build/replay $ 
+
+
+
+
+this is the most recent codex updated report and my rasp pi logs what is thenext step

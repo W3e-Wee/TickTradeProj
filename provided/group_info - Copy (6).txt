@@ -1,0 +1,4 @@
+Group 05
+dev_1M.csv: trades 1585789 to 2585788 of stress_full.csv
+SMA windows for dev_1M.csv and stress_full.csv: short 30, long 60
+SMA windows for test20.csv: short 3, long 5

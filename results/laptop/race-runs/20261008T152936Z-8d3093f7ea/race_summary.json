@@ -1,0 +1,32 @@
+{
+  "baseline": {
+    "processed_count": 20,
+    "max_lag_us": 4624.097,
+    "buy_count": 1,
+    "sell_count": 1,
+    "position_btc": 0,
+    "open_position_entry_price": null,
+    "cash_pnl": -0.010000000009313226,
+    "unfilled_orders": 0,
+    "replay_speed": 1000,
+    "elapsed_since_start_s": 0.0127842
+  },
+  "fast": {
+    "processed_count": 20,
+    "max_lag_us": 4690.897,
+    "buy_count": 1,
+    "sell_count": 1,
+    "position_btc": 0,
+    "open_position_entry_price": null,
+    "cash_pnl": -0.010000000009313226,
+    "unfilled_orders": 0,
+    "replay_speed": 1000,
+    "elapsed_since_start_s": 0.0127981
+  },
+  "start_skew_ns": 6239000,
+  "return_codes": {
+    "baseline": 0,
+    "fast": 0
+  },
+  "money_lost_fast_minus_baseline": 0.0
+}

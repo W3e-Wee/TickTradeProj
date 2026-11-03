@@ -1,0 +1,58 @@
+{
+  "version_id": "v5_manual_digit_parser_running_double_stream_O2",
+  "executable": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\build\\replay\\v5_manual_digit_parser_running_double_stream_O2.exe",
+  "configuration": "reader=manual digit-walk CSV parser; SMA=running double sums; price=double; storage=stream plus circular double ring; replay policy defaults to primary decisions; legacy-hybrid-shadow is explicit",
+  "build_metadata": {
+    "executable": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\build\\replay\\v5_manual_digit_parser_running_double_stream_O2.exe",
+    "command": [
+      "C:\\msys64\\ucrt64\\bin\\gcc.EXE",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-Wpedantic",
+      "-Werror",
+      "-Iinclude",
+      "-Iprovided",
+      "-DNDEBUG",
+      "-DREADER_KIND=2",
+      "-DSMA_KIND=1",
+      "-DFIXED_PRICE=0",
+      "-DSTORAGE_KIND=0",
+      "src/replay_engine.c",
+      "src/replay_support.c",
+      "-o",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\build\\replay\\v5_manual_digit_parser_running_double_stream_O2.exe"
+    ],
+    "compiler_version": "gcc.EXE (Rev3, Built by MSYS2 project) 16.2.0",
+    "source": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\src\\replay_engine.c",
+    "source_sha256": "cc2142599c4678b9db84390db0a5df55f8e1a2362a2d1292eb94a5f9b4a84e06",
+    "source_inputs": {
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\src\\replay_engine.c": "cc2142599c4678b9db84390db0a5df55f8e1a2362a2d1292eb94a5f9b4a84e06",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\src\\replay_support.c": "1632c7c02058c2acb9d7ed29922e40cb54f1a95846df4d84808832398e613f57",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\include\\replay_support.h": "671e7e1ca4b881793543b5cc8ef7f660e16a6ab038375798be265418545a496d",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\include\\market.h": "7d48f8d9e6c0d091b0eb72b81c25a4c299a4f59370b9222896898fcf552c16f7",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\provided\\timing.h": "e471bf10e7476aec4bd327b1c6ef57604e573a52a70c84ae82e3bb2ac28987bf",
+      "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\provided\\led.h": "542dd2324a568d9c4bf53a153faaa2d8e141bcb547713ae422b6f99fad2f6867"
+    },
+    "selection": "reader=manual digit-walk CSV parser; SMA=running double sums; price=double; storage=stream plus circular double ring; replay policy defaults to primary decisions; legacy-hybrid-shadow is explicit"
+  },
+  "dataset_path": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\test20 - Copy (6).csv",
+  "dataset_sha256": "8d3093f7ea9c1699108570f461192289c313fc2ea868f5c8233a93b4e9e3847c",
+  "dataset_bytes": 1527,
+  "dataset_trade_count": 20,
+  "speed": 1000,
+  "windows": {
+    "short": 3,
+    "long": 5
+  },
+  "duration_seconds": null,
+  "record_limit": 20,
+  "output_mode": "off",
+  "signal_policy": "primary",
+  "latency_csv": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\results\\replays\\windows-amd64\\20261008T133517Z-8d3093f7ea-v5_manual_digit_parser_running_double_stream_O2-x1000\\latency_samples.csv",
+  "decision_csv": "C:\\Users\\siamu\\Desktop\\SIT Trimester 1\\Mini Project\\Grp05\\results\\replays\\windows-amd64\\20261008T133517Z-8d3093f7ea-v5_manual_digit_parser_running_double_stream_O2-x1000\\decisions.csv",
+  "host_os": "Windows-11-10.0.26200-SP0",
+  "host_machine": "AMD64",
+  "hardware_led_claimed": false,
+  "timing": "monotonic absolute release deadlines anchored to first timestamp"
+}
