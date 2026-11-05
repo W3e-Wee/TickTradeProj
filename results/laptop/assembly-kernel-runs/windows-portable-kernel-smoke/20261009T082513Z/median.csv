@@ -1,3 +1,0 @@
-kernel,repeats,median_ns_per_call,median_elements_per_second,checksum
-c_reference,5,192537.5,1361521781.471142,14406837647454548480
-portable_c_fallback,5,211210.15625,1241152436.2953072,14406837647454548480

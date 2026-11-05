@@ -1,2 +1,0 @@
-# Optional dependency for python/market_numpy.py and compare-python.
-numpy>=2.0

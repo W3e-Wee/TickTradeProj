@@ -1,5 +1,0 @@
-version,trade,replay_speed,lag_us,buy_count,sell_count,position_btc,cash_pnl,elapsed_since_start_s
-v0_baseline_strtok_running_double_heap_O0,7,1000,3797.537,1,0,1,-75436.94,0.0054042
-v0_baseline_strtok_running_double_heap_O0,10,1000,3286.516,1,1,0,-0.010000000009313226,0.0059787
-v5_manual_digit_parser_running_double_stream_O2,7,1000,3866.537,1,0,1,-75436.94,0.0064148
-v5_manual_digit_parser_running_double_stream_O2,10,1000,3355.216,1,1,0,-0.010000000009313226,0.0066375

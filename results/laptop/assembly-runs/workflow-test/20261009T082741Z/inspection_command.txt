@@ -1,1 +1,0 @@
-rg -n "^[A-Za-z_.$].*:|\b(ld|ldr|str|stur|add|sub|mul|cmp|b\w*|bl)\b" "C:\Users\siamu\Desktop\SIT Trimester 1\Mini Project\Grp05\results\laptop\assembly-runs\workflow-test\20261009T082741Z\assembly\v1_baseline_strtok_running_double_heap_O2.s"
