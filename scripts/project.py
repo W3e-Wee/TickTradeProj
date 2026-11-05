@@ -58,9 +58,9 @@ def platform_build_flags():
 def profile_build_flags(profile: str) -> list[str]:
     common = ['-std=c11', '-Wall', '-Wextra', '-Wpedantic']
     if profile == 'debug':
-        return common + ['-g3', '-O0', '-Iinclude'] + platform_build_flags()
+        return common + ['-g3', '-O0', '-Iinclude', '-Iprovided'] + platform_build_flags()
     if profile == 'release':
-        return common + ['-O2', '-DNDEBUG', '-Iinclude'] + platform_build_flags()
+        return common + ['-O2', '-DNDEBUG', '-Iinclude', '-Iprovided'] + platform_build_flags()
     raise ValueError('profile must be debug or release')
 
 

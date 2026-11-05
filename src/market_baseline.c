@@ -5,10 +5,10 @@
  * computes VWAP, running SMA crossover signals, and timestamp OHLC bars. */
 #include <errno.h>
 #include <inttypes.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #if defined(_WIN32)
 #include <psapi.h>
 #else
