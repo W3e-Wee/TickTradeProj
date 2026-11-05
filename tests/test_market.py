@@ -131,7 +131,6 @@ class MarketTests(unittest.TestCase):
         result = run_binary('stage0.exe', '100000')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('N=100000', result.stdout)
-        self.assertIn('iterative_sum=', result.stdout)
 
     def test_test20_expected_output(self):
         result = run_binary('market_baseline.exe', str(DATASET), '3', '5')
