@@ -19,6 +19,8 @@ __pycache__/
 
 # Local editor and operating-system files
 .vscode/
+!.vscode/
+!.vscode/tasks.json
 .idea/
 .DS_Store
 Thumbs.db
@@ -65,6 +67,8 @@ benchmark-*.tar.gz
 
 # Large coursework datasets: share separately with groupmates
 # Keep small test20 CSVs and result CSVs trackable
+data/*.csv
+data/group_info.txt
 stress_full*.csv
 dev_1M*.csv
 dev1M*.csv

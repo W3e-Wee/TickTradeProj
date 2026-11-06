@@ -1,162 +1,63 @@
 # Tick-to-Trade on the Edge
 
-Tick-to-Trade on the Edge is an educational CSC1103/CSC1104 group coursework repository. It contains a C market-data engine and registered implementation variants, a timestamp-paced replay harness, correctness and performance workflows, Python references, and an isolated AArch64 assembly exercise. It is designed for laptop development and Raspberry Pi 5 experiments using supplied or course-provided CSV data.
+This C11 coursework project reads Binance-style trade CSV files, computes VWAP, one-second OHLC bars and moving-average crossover signals, then compares streaming and in-memory implementations. Replay is offline and does not connect to an exchange or place orders.
 
-> **Academic and use notice:** This is educational coursework. It is not connected to a real exchange and does not perform real trading. It is not financial advice, carries no warranty, and offers no guarantee of profit. See [LICENSE_NOTICE.md](LICENSE_NOTICE.md).
+## Platforms and prerequisites
 
-## What the project does
+The project targets 64-bit Linux, macOS and Windows with GCC or Clang and GNU Make. Windows builds are tested with MSYS2 UCRT64 GCC/Make or `mingw32-make`. Optional tools are gnuplot for PNG output, Linux `perf` for hardware counters, and an AArch64 Raspberry Pi for the Pi benchmark.
 
-The C workflows read Binance-style trade CSVs and calculate cumulative VWAP, short and long simple moving averages, crossover decisions, and one-second OHLC summaries. Versions v0-v10 compare registered parser, storage, arithmetic, and compiler choices. The project also checks results against the official test20 oracle, replays timestamped trades, models a coursework rival and concurrent race, profiles selected builds, and compares C with streaming Python and batch NumPy implementations. A separate unsigned dot-product kernel demonstrates portable C and AArch64 assembly; it is not a market-engine version.
+Install a C compiler and Make using your platform package manager. Install gnuplot only when you want PNG plots. The four course data files are already in `data/`; see [data/README.md](data/README.md). Keep supplied inputs unchanged.
 
-## Architecture overview
-
-`scripts/project.py` is the canonical build, test, validation, and evidence driver. It owns the registered version IDs, compiler arguments, build metadata, and most workflows. `Makefile` delegates common tasks to that driver. The C implementations are in `src/`, public contracts in `include/`, course-supplied support in `provided/`, and the Python engines in `python/`. `scripts/rival.py` implements the rival simulation. Tests live in `tests/`; generated programs and source-hash sidecars go in `build/`; evidence is written to `results/` in unique run directories.
-
-## Supported platforms
-
-- Windows 10/11 with **MSYS2 UCRT64** GCC and GNU Make for laptop build, test, and analysis workflows.
-- Raspberry Pi 5 with 64-bit Raspberry Pi OS and AArch64 Linux for native Pi workflows, hardware LED access, `perf`, and the real AArch64 kernel.
-- Python 3 and a GCC-compatible compiler are required for the main driver. Windows may use the portable C kernel fallback; that does not validate native assembly.
-
-## Required tools
-
-Required: Git, Python 3, GCC, and (for Makefile commands) GNU Make. Use a current GCC supported by the platform packages; the project records the compiler version and exact command with each build. Python's standard library is sufficient for the driver and plain-Python workflows. NumPy is optional and required only by `compare-python`/`market_numpy.py`. GNUplot is optional; the driver can write SVG plots without it. `perf`, `taskset`, and Linux CPU governor controls are for controlled Pi profiling and runs. See [Getting Started](docs/GETTING_STARTED.md) for installation and checks.
-
-## Quick start
-
-Clone the repository (replace the URL with the group's actual GitHub URL), then change into the cloned directory:
+## Build and run
 
 ```sh
-git clone <REPOSITORY_URL>
-cd <REPOSITORY_FOLDER>
+make
+make test
+make run-stage0
+make run-stageA
+make test-test20
+make test-consistency
 ```
 
-Install the platform tools using [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md). Place the course datasets in the repository root, `data/`, or `datasets/`. Supported filename searches are `test20`, `dev_1M`, and `stress_full`; the official supplied test file in this checkout is named `test20 - Copy (6).csv`, so quote it when using the file path directly. The official oracle is `test20_expected - Copy (6).txt`. The driver also finds names containing `dev_1M` and `stress_full`; use the course-provided data rather than renaming or fabricating data.
+Select the group’s window sizes with `make GROUP=07 ...`. `config/groups.mk` records all 21 short/long window pairs. Individual ladder programs accept `--file`, `--short`, and `--long`; run `build/<platform>/v8 --help` for the usage line.
 
-```sh
-python3 scripts/project.py doctor
-python3 scripts/project.py build-all
-python3 scripts/project.py test --suite quick
-python3 scripts/project.py verify --dataset test20 --all-versions
-python3 scripts/project.py replay --version v1_baseline_strtok_running_double_heap_O2 --dataset test20 --speed 1000 --limit 20
-python3 scripts/project.py benchmark --dataset stress_full --repeats 5
-```
+## Stages and targets
 
-The verify command requires the test20 CSV and oracle. The benchmark requires stress_full and can take a long time; laptop numbers are laptop evidence only. Build and test do not require NumPy. Check each command's output before relying on it; `doctor` reports missing tools and any discovered course dataset names.
-
-When running the compiled baseline directly on Windows, quote the supplied filename because it contains spaces:
-
-```powershell
-.\build\release\market_baseline.exe "test20 - Copy (6).csv" 3 5
-```
-
-## Repository layout
-
-| Path | Contents |
+| Target | Result |
 | --- | --- |
-| `src/` | C market versions, replay engine/support, Stage 0 |
-| `include/` | C interfaces and AArch64 kernel contract |
-| `provided/` | Course helpers, LED/timing headers, and assignment PDF |
-| `asm/` | Dot-product reference, benchmark, and AArch64 implementation |
-| `python/` | Streaming Python, batch NumPy engine, and comparison helper |
-| `scripts/` | Project driver and rival model |
-| `tests/` | Python and C tests |
-| `docs/` | Setup, workflows, development, evidence, and course handover |
-| `config/` | Platform compiler flags and example environment file |
-| `build/` | Generated binaries and build metadata; never commit these |
-| `results/` | Existing and newly timestamped evidence; preserve raw files |
+| `all` | Build Stage A, parser/profile/platform tools, Stage 0 variants and ladder v0–v8. |
+| `stage0` / `run-stage0` | Build/run O0–O3 loop and recursion benchmarks, guarded and plain. |
+| `stageA` / `run-stageA` | Build/run the streaming CSV strategy on test20 and development data. |
+| `stageA_plus` / `parser_compare` | Build parser comparison; `make parser-dev-test` checks every development row. |
+| `ladder` | Build v0–v8. v0/v1/v2 use O0/O2/O3, v3 accepts optional `PI_CFLAGS`, v4 uses the manual parser, v5 uses rolling sums, v6 uses fixed point, and v7/v8 preload bounded static/exact-sized arrays. |
+| `test-test20` | Compare ladder outputs with each other and the supplied expected summary. |
+| `verify-golden` | Check the supplied test20 summary against the ladder and Stage A. |
+| `test-consistency` | Check development and stress datasets across ladder versions. |
+| `profile-data` | Write measured numeric ranges and fixed-point sizing to `results/logs/data_profile.txt`. |
+| `bench` / `memory` | Run selected ladder versions and report timing/peak-memory fields from their RESULT records. |
+| `replay-realtime`, `replay-100x`, `replay-1000x` | Replay timestamps at the selected speed and summarize lag percentiles. |
+| `race-v0` / `race-fast` | Run baseline and fastest-ladder candidates over the same development data. |
+| `rival` | Generate a 25-point reaction-time sweep in `results/rival/sweep.csv`. |
+| `asm` | Write a host compiler assembly listing to `results/asm/engine.s`. |
+| `plot-signals` / `plots` | Export a 2,000-trade signal slice; render it when gnuplot is installed. |
+| `stretch` / `stretch-python` | Run the SoA/NEON comparison and optional independent Python reference. |
+| `perf` | Run Linux hardware counters; reports NOT VERIFIED on Windows. |
+| `bench-pi` | Run the ladder benchmark workflow; Pi-specific results require running on a Raspberry Pi. |
+| `strict` | Clean rebuild with warnings treated as errors and run the full test suite. |
+| `clean` / `distclean` | Remove build products; distclean also removes generated results. |
 
-## Main command reference
+All engines emit exactly one `RESULT` record; fields are described in [docs/output_format.md](docs/output_format.md). Timing values are machine-specific. Do not copy them into reports without rerunning the command on the named hardware. The C profiler measures the supplied files; it does not assume their names describe their row counts.
 
-Run commands from the repository root:
+## Results and reports
 
-`doctor` shows detected tools and datasets:
+Generated artifacts live under `results/`. `make plot-signals` creates `results/plots/signals.dat`; with gnuplot it also creates the PNG. `make rival` writes `results/rival/sweep.csv`. The corresponding gnuplot templates are under `scripts/`. The design, architecture, numerical policy, migration record and output contract are in `docs/`.
 
-```sh
-python3 scripts/project.py doctor
-```
+For Raspberry Pi measurements, record the exact model, compiler flags, governor, core affinity and command. `make perf` is Linux-only; hardware counters and Pi-specific timings are NOT VERIFIED on other hosts. The source uses `-ffp-contract=off`; it does not enable unsafe floating-point transformations.
 
-Build the debug or release baseline:
+## Layout
 
-```sh
-python3 scripts/project.py build --profile debug
-python3 scripts/project.py build --profile release
-```
+`src/common/` contains portable shared modules; `src/provided/` preserves the supplied helper files; `src/stage0/`, `src/stageA/`, `src/stageA_plus/`, `src/ladder/`, `src/stageC/`, `src/tools/` and `src/stretch/` contain their respective programs. `tests/` contains unit and integration checks. Course inputs remain in `data/`.
 
-Build every registered offline and replay target:
+## Academic integrity
 
-```sh
-python3 scripts/project.py build-all
-```
-
-Run the tests and verify all versions against test20:
-
-```sh
-python3 scripts/project.py test --suite quick
-python3 scripts/project.py verify --dataset test20 --all-versions
-```
-
-Inspect replay or benchmark options:
-
-```sh
-python3 scripts/project.py replay --help
-python3 scripts/project.py benchmark --help
-```
-
-Review source, evidence, and manual handover readiness:
-
-```sh
-python3 scripts/project.py readiness
-```
-
-The [User Guide](docs/USER_GUIDE.md) documents all major workflows and their inputs, outputs, platform requirements, and effects.
-
-## Documentation index
-
-- [Getting Started](docs/GETTING_STARTED.md): Windows/MSYS2 and Raspberry Pi setup, datasets, and troubleshooting.
-- [User Guide](docs/USER_GUIDE.md): exact command interfaces and workflow outputs.
-- [Developer Guide](docs/DEVELOPER_GUIDE.md): architecture, build/test layout, and safe contribution practices.
-- [Reproducibility](docs/REPRODUCIBILITY.md): environment matrix and evidence reproduction protocol.
-- [GitHub Handover](docs/GITHUB_HANDOVER.md): clone, branch, commit, review, and recovery steps.
-- [Version manifest](docs/version_manifest.md): v0-v10 implementation identity and build selections.
-- [Performance methodology](docs/performance_methodology.md): measurement boundaries and evidence interpretation.
-- [AI assistance record](docs/ai_assistance.md): declared use and academic responsibility.
-- [Known limitations](docs/known_limitations.md): platform evidence gaps and remaining team deliverables.
-
-## Testing and validation
-
-Run the portable checks after making changes:
-
-```sh
-python3 scripts/project.py doctor
-python3 scripts/project.py readiness
-python3 scripts/project.py test --suite quick
-python3 scripts/project.py verify --dataset test20 --all-versions
-```
-
-`verify` needs the official test20 input and expected-answer file. Full test coverage may also use `dev_1M` and `stress_full`. Use the Pi-specific procedures for native AArch64, `perf`, LED, governor, and taskset checks. A Windows result cannot establish Pi behavior.
-
-## Results and evidence policy
-
-Do not overwrite or regenerate existing evidence. Workflows normally allocate unique run directories under `results/laptop/`, `results/pi/`, or `results/replays/`; inspect the manifest before sharing a result. Preserve raw output, source and dataset hashes, compiler/platform details, and measurement settings. Keep measured values distinct from predictions and laptop measurements distinct from Pi measurements. Large/private course CSVs are intentionally not ignored by Git: do not stage them unless the team and course rules explicitly require them. Inspect `git status` and add specific paths. See [Reproducibility](docs/REPRODUCIBILITY.md).
-
-## Known limitations
-
-- This checkout has laptop evidence and no locally inspectable Pi run evidence; Pi-only claims remain unverified here.
-- NumPy processes batches offline and is not a replay-latency engine.
-- The assembly exercise is an isolated dot product, not a replacement for the C market engine; scalar assembly may be slower than optimized C.
-- LED output needs supported hardware and suitable Linux permissions. `perf` counters depend on kernel and PMU access.
-- Rival P&L uses simplified coursework fills and omits exchange connectivity, fees, and real order execution.
-- Course datasets may be large and may need to be obtained separately.
-
-## Contribution workflow
-
-Use a short feature branch, make a focused change, run applicable checks, inspect the full diff, and open a pull request for team review. Do not change frozen v0-v10, replay, rival, race, SoA, Python/NumPy, or assembly behavior as part of documentation work. Avoid `git add .`; stage explicit paths after checking status. Follow [GitHub Handover](docs/GITHUB_HANDOVER.md).
-
-## AI assistance and academic integrity
-
-AI assistance has been used in this repository and is recorded in [docs/ai_assistance.md](docs/ai_assistance.md). Team members must review and understand all submitted work, follow university/course disclosure rules, and ensure that submitted material represents permitted work. Do not present generated or unverified claims as personal measurements.
-
-## License/coursework notice
-
-This repository uses a restrictive coursework notice rather than granting an open-source license. Read [LICENSE_NOTICE.md](LICENSE_NOTICE.md) before reuse or redistribution.
+Before submission, complete the group’s AI-assistance disclosure in line with course rules and review every source file as a team.

@@ -1,0 +1,10 @@
+# Annotated assembly
+
+`make asm` generates `results/asm/engine.s` with the current host compiler and flags. The checked-in report describes the available Windows x86-64 GCC listing; it does not claim Raspberry Pi measurements.
+
+- `engine_fixed_sma_push` has a Win64 prologue that saves nonvolatile registers, then computes the ring slot and checked sum updates.
+- `engine_execute` owns allocation, file I/O, and cleanup around the processing loop.
+- `engine_step` is inlined at `-O2` in this host listing; the price scaling calls resolve through `llround`.
+- Exact crossover comparisons call `fp_compare_products`; the fixed-point path does not compare rounded floating averages.
+
+An AArch64 listing and NEON timing are NOT VERIFIED on this host. Run `make asm CC=aarch64-linux-gnu-gcc` on a configured cross compiler or run the target on the Pi before documenting that platform's generated code.

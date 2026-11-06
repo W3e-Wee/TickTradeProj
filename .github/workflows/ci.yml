@@ -1,0 +1,22 @@
+name: C build and tests
+on: [push, pull_request]
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: mingw-w64-ucrt-x86_64-gcc make
+      - if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: make all && make test && make strict
+      - if: runner.os != 'Windows'
+        run: make all && make test && make strict

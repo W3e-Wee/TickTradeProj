@@ -1,2 +1,3 @@
-# Shared platform API flags. Python reads POSIX_API_CFLAGS for Linux builds.
-POSIX_API_CFLAGS := -D_POSIX_C_SOURCE=200809L
+# Portable defaults; architecture-specific flags are enabled only when detected.
+PI_CFLAGS ?=
+NEON_CFLAGS ?=

@@ -1,0 +1,12 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        { "label": "all", "type": "shell", "command": "make all", "problemMatcher": [] },
+        { "label": "test", "type": "shell", "command": "make test", "problemMatcher": [] },
+        { "label": "verify-golden", "type": "shell", "command": "make verify-golden", "problemMatcher": [] },
+        { "label": "run-stageA", "type": "shell", "command": "make run-stageA", "problemMatcher": [] },
+        { "label": "bench", "type": "shell", "command": "make bench", "problemMatcher": [] },
+        { "label": "plot-signals", "type": "shell", "command": "make plot-signals", "problemMatcher": [] },
+        { "label": "clean", "type": "shell", "command": "make clean", "problemMatcher": [] }
+    ]
+}
