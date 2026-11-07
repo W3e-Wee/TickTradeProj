@@ -23,3 +23,14 @@ the recursion benchmark. Parser comparison rows are
 `file,rows,repeats,sscanf_median_ns,fast_median_ns,speedup`. Rival sweep rows are
 `reaction_us,pnl,money_lost,trades`. Signal plot data has no header and stores
 `trade_index,price,short_sma,long_sma,signal` for gnuplot.
+
+Replay writes `results/replay/<platform>_<member>_<core>_<speed>x.csv` and
+appends each run to `results/replay/summary_<platform>_<member>.csv`. Both use
+the following columns:
+
+```text
+platform,member,core,speed,trades_replayed,market_seconds,wall_seconds,avg_latency_ns,worst_latency_ns,p50_latency_ns,p99_latency_ns,avg_processing_ns,max_lag_us,pct_behind,dropped_events,buys,sells,pnl_vs_rival_r1
+```
+
+The rival sweep CSV begins with `platform,member` followed by its reaction,
+P&L, money-lost and trade-count fields.

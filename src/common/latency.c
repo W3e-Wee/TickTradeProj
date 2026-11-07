@@ -1,14 +1,13 @@
 /* Latency collection uses caller storage so replay loops remain allocation-free. */
 #include "latency.h"
+#include <stdlib.h>
 
-/* Sort an existing sample range to make percentile extraction deterministic. */
-static void latency_sort(uint64_t *values, size_t count)
+/* Sort in O(n log n) so full-file replay percentiles remain practical. */
+static int latency_compare(const void *left, const void *right)
 {
-    for (size_t i = 1; i < count; ++i) {
-        uint64_t value = values[i]; size_t j = i;
-        while (j > 0 && values[j - 1] > value) { values[j] = values[j - 1]; --j; }
-        values[j] = value;
-    }
+    uint64_t a = *(const uint64_t *)left;
+    uint64_t b = *(const uint64_t *)right;
+    return (a > b) - (a < b);
 }
 
 /* Initialize bounded storage before any timed replay work starts. */
@@ -32,7 +31,7 @@ int latency_summarize(LatencySamples *samples, LatencySummary *summary)
 {
     long double total = 0.0L;
     if (samples == NULL || summary == NULL || samples->count == 0) return 0;
-    latency_sort(samples->values, samples->count);
+    qsort(samples->values, samples->count, sizeof *samples->values, latency_compare);
     for (size_t i = 0; i < samples->count; ++i) total += samples->values[i];
     summary->average_ns = (double)(total / samples->count);
     summary->worst_ns = samples->values[samples->count - 1];

@@ -50,7 +50,7 @@ secrets.json
 id_rsa
 id_ed25519
 
-# Temporary files and generated archives; result/evidence files are not ignored
+# Temporary files and generated archives
 *.tmp
 *.temp
 *.tmp.log
@@ -66,7 +66,7 @@ benchmark-*.tar.gz
 
 
 # Large coursework datasets: share separately with groupmates
-# Keep small test20 CSVs and result CSVs trackable
+# Course CSV files are copied into the workspace separately.
 data/*.csv
 data/group_info.txt
 stress_full*.csv
@@ -83,3 +83,12 @@ Grp05-*.zip
 
 # Final submission archive: distribute/submit separately
 UoG-PMCOA.zip
+
+# Track only the results directory structure and the required placeholders.
+results/**
+!results/**/
+!results/**/.gitkeep
+build/
+data/*.csv
+*.o
+*.exe

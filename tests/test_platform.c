@@ -7,6 +7,9 @@ int main(void)
     CHECK(plat_now_ns() != 0);
     CHECK(plat_platform_name() != NULL);
     CHECK(plat_cpu_governor() != NULL);
+    plat_timer_begin();
+    CHECK(plat_sleep_granularity_us() >= 100U);
+    plat_timer_end();
     (void)plat_peak_memory_kb();
     (void)plat_is_raspberry_pi();
     CHECK(plat_enable_ansi() == 0 || plat_enable_ansi() != 0);

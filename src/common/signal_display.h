@@ -4,9 +4,12 @@
 #include <stdint.h>
 /* Initialize platform ANSI handling before any colored output. */
 void signal_display_init(void);
-/* Show one trade signal and drive the matching course LED. */
+/* Render a queued signal and drive its LED; call only outside engine processing. */
 void signal_display_signal(int side, uint64_t trade_index, double price);
-/* Refresh replay progress, nonnegative lag, counts, and running P&L. */
-void signal_display_status(uint64_t trades, uint64_t lag_us, uint64_t buys,
-                           uint64_t sells, double pnl);
+/* Refresh market time, replay progress, lag, counts, and running P&L. */
+void signal_display_status(uint64_t trades, double market_seconds,
+                           uint64_t lag_us, uint64_t buys, uint64_t sells,
+                           double pnl);
+/* Turn off both LEDs, restore terminal color, and flush the final line. */
+void signal_display_cleanup(void);
 #endif

@@ -37,3 +37,9 @@ The first full-window difference establishes the previous direction and does not
 ## Measurement policy
 
 `make profile-data`, `make bench`, `make memory`, replay targets, and the rival sweep write or print measurements derived by the programs. Results depend on the host and must be rerun before use in a report. Linux performance counters and AArch64 NEON acceleration are not verified on the Windows x86 host used for this implementation.
+
+## Replay design
+
+For trade timestamp `ts`, the scheduled release is `start + (ts - first_ts) / speed`, with timestamps converted from microseconds to nanoseconds. The wait helper sleeps only while the gap exceeds the measured sleep granularity plus 500 microseconds, then checks the provided monotonic `now_ns()` clock until release; a trade is never passed to the engine early. Windows temporarily requests 1 ms timer resolution, and the Makefile links `-lwinmm` there.
+
+Latency is decision time minus scheduled release time. Processing time covers only the engine step. Both measurements are stored in arrays allocated before replay starts. Current and maximum lag use nonnegative lateness, and the report includes the fraction of decisions after release. Signal events enter a fixed ring buffer in the replay loop; console output, flushes, LED calls and status updates happen during idle gaps or periodic render visits. This keeps slow terminal and LED operations out of the engine decision path.

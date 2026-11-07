@@ -3,15 +3,16 @@
 #define _GNU_SOURCE
 #endif
 #define _POSIX_C_SOURCE 200809L
+#include "timing.h"
 #include "platform.h"
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <psapi.h>
+#include <mmsystem.h>
 #elif defined(__APPLE__) || defined(__linux__)
 #include <sys/resource.h>
 #include <unistd.h>
@@ -23,31 +24,51 @@
 /* Read the monotonic clock so measurements do not follow wall-clock changes. */
 uint64_t plat_now_ns(void)
 {
-#if defined(_WIN32)
-    LARGE_INTEGER ticks;
-    LARGE_INTEGER frequency;
-    if (!QueryPerformanceFrequency(&frequency) || !QueryPerformanceCounter(&ticks)) return 0;
-    return (uint64_t)((ticks.QuadPart / frequency.QuadPart) * 1000000000ULL +
-        (ticks.QuadPart % frequency.QuadPart) * 1000000000ULL / frequency.QuadPart);
-#else
-    struct timespec value;
-    if (clock_gettime(CLOCK_MONOTONIC, &value) != 0) return 0;
-    return (uint64_t)value.tv_sec * 1000000000ULL + (uint64_t)value.tv_nsec;
-#endif
+    return now_ns();
 }
 
 /* Sleep outside timed loops; nanosleep is available on POSIX systems. */
 int plat_sleep_ms(unsigned milliseconds)
 {
-#if defined(_WIN32)
-    Sleep(milliseconds);
+    sleep_ms((int)milliseconds);
     return 0;
-#else
-    struct timespec request;
-    request.tv_sec = (time_t)(milliseconds / 1000U);
-    request.tv_nsec = (long)(milliseconds % 1000U) * 1000000L;
-    return nanosleep(&request, NULL);
+}
+
+/* Raise Windows timer resolution while replay is active. */
+void plat_timer_begin(void)
+{
+#if defined(_WIN32)
+    (void)timeBeginPeriod(1);
 #endif
+}
+
+/* Restore the Windows timer resolution after replay. */
+void plat_timer_end(void)
+{
+#if defined(_WIN32)
+    (void)timeEndPeriod(1);
+#endif
+}
+
+/* Measure one-millisecond sleep granularity once, using the supplied timer. */
+uint64_t plat_sleep_granularity_us(void)
+{
+    static uint64_t cached;
+    if (cached != 0) return cached;
+    uint64_t samples[7];
+    for (size_t i = 0; i < sizeof samples / sizeof samples[0]; ++i) {
+        uint64_t started = now_ns();
+        sleep_ms(1);
+        uint64_t ended = now_ns();
+        samples[i] = ended >= started ? (ended - started) / 1000U : 1000U;
+    }
+    for (size_t i = 1; i < sizeof samples / sizeof samples[0]; ++i) {
+        uint64_t value = samples[i]; size_t j = i;
+        while (j > 0 && samples[j - 1] > value) { samples[j] = samples[j - 1]; --j; }
+        samples[j] = value;
+    }
+    cached = samples[sizeof samples / sizeof samples[0] / 2];
+    return cached;
 }
 
 /* Identify the build host for machine-readable benchmark labels. */

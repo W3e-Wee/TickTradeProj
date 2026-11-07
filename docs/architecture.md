@@ -9,13 +9,27 @@
            |                |                |
            +------ shared common APIs ------+
                             |
-                       platform
+              +------------+------------+
+              |                         |
+       platform.c timers           replay modules
+       clock / sleep / ANSI       scheduler / engine
+       affinity / memory          event queue / display
+              |                         |
+              +----------+--------------+
+                         |
+                  provided helpers
+             now_ns / sleep_ms / LED
 ```
 
 Dependency rule: `indicators`, `signal_rule`, and `fixed_point` depend only on
 portable compiler compatibility definitions. Programs depend on modules;
 modules never depend on programs. OS-specific headers and calls belong only in
 `src/common/platform.c`.
+
+Stage C uses `platform.c` for timer resolution, measured sleep granularity,
+affinity and terminal setup. `replay.c` schedules trade release, `replay_engine.c`
+updates each strategy, and `replay_events.c` queues deferred signal rendering
+through `signal_display.c`.
 
 ## Ladder relationships
 

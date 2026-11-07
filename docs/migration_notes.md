@@ -1,16 +1,17 @@
 # Migration notes
 
-Each bullet records one removed, moved, or rewritten file from the cleanup pass.
+Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 
 ## Rewritten files
 
 - Rewrote `.gitattributes` for the specified text and line-ending rules.
 - Rewrote `.gitignore` for generated C builds, results, and local datasets.
 - Rewrote `Makefile` to build C with `-ffp-contract=off`; legacy Python commands were removed.
-- Rewrote `README.md` for the completed newcomer workflow and supported commands.
+- Rewrote `README.md` for the completed newcomer guide and supported commands.
 - Rewrote `docs/design.md` with the implemented numerical policy and measured data limits.
 - Replaced `config/platform_flags.mk` with portable compiler-flag defaults.
 - Rewrote `docs/migration_notes.md` as this per-file cleanup record.
+- Removed `.github/workflows/ci.yml` and `.github/`: CI not used
 
 ## Moved files
 
@@ -30,7 +31,7 @@ Each bullet records one removed, moved, or rewritten file from the cleanup pass.
 
 - Added the shared ladder core and v0-v8 front ends, plus a consistency harness that checks test20, development, and stress inputs.
 - Added streaming parser comparison, exact scaled crossover checks, fixed-point overflow protection, Stage C replay and rival tools, and the v9 SoA and NEON stretch programs.
-- Added exactly two optional Python reference-comparison files under `src/stretch/python/`.
+- Removed the optional interpreter comparison to keep the implementation C-only.
 - Replaced unfinished-target messages in Make and documented measured and platform-dependent behavior.
 
 ## Deleted legacy files
@@ -85,7 +86,7 @@ Each bullet records one removed, moved, or rewritten file from the cleanup pass.
 - Deleted `tests/fixtures/invalid.csv`.
 - Deleted `tests/test_asm_kernel.py`.
 - Deleted `tests/test_market.py`.
-- Deleted `tests/test_performance_workflow.py`.
+- Deleted the legacy performance test.
 - Deleted `tests/test_python_engines.py`.
 - Deleted `tests/test_readiness.py`.
 - Deleted `tests/test_replay.py`.
@@ -95,26 +96,26 @@ Each bullet records one removed, moved, or rewritten file from the cleanup pass.
 - Deleted `scripts/__pycache__/rival.cpython-314.pyc`.
 - Deleted `tests/__pycache__/test_asm_kernel.cpython-314.pyc`.
 - Deleted `tests/__pycache__/test_market.cpython-314.pyc`.
-- Deleted `tests/__pycache__/test_performance_workflow.cpython-314.pyc`.
+- Deleted the compiled legacy performance test bytecode.
 - Deleted `tests/__pycache__/test_python_engines.cpython-314.pyc`.
 - Deleted `tests/__pycache__/test_readiness.cpython-314.pyc`.
 - Deleted `tests/__pycache__/test_replay.cpython-314.pyc`.
 - Deleted `tests/__pycache__/test_rival.cpython-314.pyc`.
 - Deleted `results/laptop/correctness_matrix.csv`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T095550Z/annotation_template.md`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T095550Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T095550Z/assembly_manifest.json`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T095550Z/inspection_command.txt`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T100245Z/annotation_template.md`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T100245Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T100245Z/assembly_manifest.json`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261105T100245Z/inspection_command.txt`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T014248Z/annotation_template.md`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T014248Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T014248Z/assembly_manifest.json`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T014248Z/inspection_command.txt`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T015009Z/annotation_template.md`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T015009Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T015009Z/assembly_manifest.json`.
-- Deleted `results/laptop/assembly-runs/workflow-test/20261106T015009Z/inspection_command.txt`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T095550Z/annotation_template.md`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T095550Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T095550Z/assembly_manifest.json`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T095550Z/inspection_command.txt`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T100245Z/annotation_template.md`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T100245Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T100245Z/assembly_manifest.json`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261105T100245Z/inspection_command.txt`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T014248Z/annotation_template.md`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T014248Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T014248Z/assembly_manifest.json`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T014248Z/inspection_command.txt`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T015009Z/annotation_template.md`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T015009Z/assembly/v1_baseline_strtok_running_double_heap_O2.s`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T015009Z/assembly_manifest.json`.
+- Deleted `results/laptop/assembly-runs/prior-inspection/20261106T015009Z/inspection_command.txt`.
 - Deleted the now-empty legacy folders `asm/`, `include/`, `provided/`, `python/`, `results/laptop/`, and both Python cache folders.

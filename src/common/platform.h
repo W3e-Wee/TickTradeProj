@@ -7,6 +7,11 @@
 uint64_t plat_now_ns(void);
 /* Wait approximately milliseconds; return zero when supported. */
 int plat_sleep_ms(unsigned milliseconds);
+/* Request/release the OS timer resolution used during replay. */
+void plat_timer_begin(void);
+void plat_timer_end(void);
+/* Return the median observed one-millisecond sleep duration in microseconds. */
+uint64_t plat_sleep_granularity_us(void);
 /* Return the platform label in static storage. */
 const char *plat_platform_name(void);
 /* Return peak resident memory in KiB, or zero if unavailable. */
