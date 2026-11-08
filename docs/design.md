@@ -43,3 +43,9 @@ The first full-window difference establishes the previous direction and does not
 For trade timestamp `ts`, the scheduled release is `start + (ts - first_ts) / speed`, with timestamps converted from microseconds to nanoseconds. The wait helper sleeps only while the gap exceeds the measured sleep granularity plus 500 microseconds, then checks the provided monotonic `now_ns()` clock until release; a trade is never passed to the engine early. Windows temporarily requests 1 ms timer resolution, and the Makefile links `-lwinmm` there.
 
 Latency is decision time minus scheduled release time. Processing time covers only the engine step. Both measurements are stored in arrays allocated before replay starts. Current and maximum lag use nonnegative lateness, and the report includes the fraction of decisions after release. Signal events enter a fixed ring buffer in the replay loop; console output, flushes, LED calls and status updates happen during idle gaps or periodic render visits. This keeps slow terminal and LED operations out of the engine decision path.
+
+## C versus Python
+
+C is compiled to machine code, while ordinary Python executes bytecode through an interpreter. Python values are boxed objects with dynamic types, so each loop iteration carries extra interpreter and object-management work. A pure Python loop also has less control over memory layout and does not automatically vectorise its per-trade work. NumPy comes closer because its loops execute in compiled code over contiguous typed arrays. It still trails C when the workflow needs extra passes and temporary arrays, text parsing, substantial memory traffic, and separate array operations rather than fused steps.
+
+Insert the measured ratios from `results/bench/c_vs_python.csv` here.

@@ -31,6 +31,8 @@ affinity and terminal setup. `replay.c` schedules trade release, `replay_engine.
 updates each strategy, and `replay_events.c` queues deferred signal rendering
 through `signal_display.c`.
 
+Python comparison code is isolated to `src/stretch/python/` and is called only by `make stretch-python`.
+
 ## Ladder relationships
 
 | Version | Planned change | Status |

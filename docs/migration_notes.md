@@ -6,12 +6,13 @@ Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 
 - Rewrote `.gitattributes` for the specified text and line-ending rules.
 - Rewrote `.gitignore` for generated C builds, results, and local datasets.
-- Rewrote `Makefile` to build C with `-ffp-contract=off`; legacy Python commands were removed.
+- Rewrote `Makefile` to build C with `-ffp-contract=off`; the optional Python stretch is isolated to `stretch-python`.
 - Rewrote `README.md` for the completed newcomer guide and supported commands.
 - Rewrote `docs/design.md` with the implemented numerical policy and measured data limits.
 - Replaced `config/platform_flags.mk` with portable compiler-flag defaults.
 - Rewrote `docs/migration_notes.md` as this per-file cleanup record.
 - Removed `.github/workflows/ci.yml` and `.github/`: CI not used
+- Recreated the pure-Python and NumPy Stage A stretch implementations as `src/stretch/python/stage_a.py` and `src/stretch/python/stage_a_numpy.py`.
 
 ## Moved files
 
@@ -31,7 +32,6 @@ Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 
 - Added the shared ladder core and v0-v8 front ends, plus a consistency harness that checks test20, development, and stress inputs.
 - Added streaming parser comparison, exact scaled crossover checks, fixed-point overflow protection, Stage C replay and rival tools, and the v9 SoA and NEON stretch programs.
-- Removed the optional interpreter comparison to keep the implementation C-only.
 - Replaced unfinished-target messages in Make and documented measured and platform-dependent behavior.
 
 ## Deleted legacy files

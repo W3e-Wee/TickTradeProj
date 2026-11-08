@@ -14,6 +14,9 @@ CORE ?=
 SPEED ?= 1000
 DURATION ?= 600
 PIN_CORE ?= 1
+PYFILE ?= $(DATA)/stress_full.csv
+PYLIMIT ?=
+PYREPEAT ?= 3
 V ?= 0
 include config/groups.mk
 include config/platform_flags.mk
@@ -63,14 +66,18 @@ CPPFLAGS := -Isrc/common -Isrc/provided -Isrc/stage0 -Isrc/stageA_plus -Isrc/too
 CFLAGS := -std=c11 $(OPT) -ffp-contract=off -Wall -Wextra -Wpedantic $(STRICT_FLAGS) -MMD -MP
 LDFLAGS :=
 ifeq ($(OS),Windows_NT)
+PYTHON ?= $(if $(shell where python3 2>NUL),python3,$(if $(shell where python 2>NUL),python,))
+PYTHON_PATH := $(shell where $(PYTHON) 2>NUL)
 LDFLAGS += -lpsapi -lwinmm
 GNUPLOT_PATH := $(shell where gnuplot 2>NUL)
 else
+PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
+PYTHON_PATH := $(shell command -v $(PYTHON) 2>/dev/null)
 GNUPLOT_PATH := $(shell command -v gnuplot 2>/dev/null)
 endif
 
 .DEFAULT_GOAL := all
-.PHONY: all help clean distclean test test-unit test-test20 test-consistency verify-golden test-replay stage0 stageA stageA_plus ladder stageC tools stretch run-stage0 run-stageA plot-signals plot-rival parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots strict stage0-check parser-compare-test parser-dev-test
+.PHONY: all help clean distclean test test-unit test-test20 test-consistency verify-golden test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots strict stage0-check parser-compare-test parser-dev-test
 
 all: $(BUILD)/stageA_stream$(EXE) $(BUILD)/platform_check$(EXE) $(BUILD)/parser_compare$(EXE) $(BUILD)/data_profile$(EXE)
 
@@ -137,6 +144,7 @@ help:
 	@echo "stageC: build replay and rival programs"
 	@echo "tools: build data analysis tools"
 	@echo "stretch: build optional C stretch programs"
+	@echo "stretch-python: compare Stage A in C, pure Python, and NumPy"
 	@echo "run-stage0: run Stage 0 programs"
 	@echo "run-stageA: run Stage A on course files"
 	@echo "plot-signals: export and plot Stage A signals"
@@ -248,6 +256,25 @@ stageC: all $(BUILD)/rival_sweep$(EXE)
 stretch: $(BUILD)/v9_soa$(EXE) $(BUILD)/neon_sum$(EXE)
 	$(BUILD)/neon_sum$(EXE)
 	$(BUILD)/v9_soa$(EXE) --file data/test20.csv --short 3 --long 5
+
+ifeq ($(strip $(PYTHON_PATH)),)
+stretch-python:
+	@echo "SKIPPED: python not found"
+else ifeq ($(wildcard $(PYFILE)),)
+stretch-python:
+	@echo "ERROR: missing dataset: $(PYFILE)"
+	@exit 6
+else
+ifeq ($(strip $(PYLIMIT)),)
+PYLIMIT_ARG :=
+else
+PYLIMIT_ARG := --limit $(PYLIMIT)
+endif
+stretch-python: $(BUILD)/$(FASTEST)$(EXE) | results/bench
+	"$(BUILD)/$(FASTEST)$(EXE)" --file $(PYFILE) --short $(SHORT) --long $(LONG) > "$(BUILD)/python_c_reference.txt"
+	$(PYTHON) -B src/stretch/python/stage_a.py --file $(PYFILE) --short $(SHORT) --long $(LONG) --repeat $(PYREPEAT) --compare-c $(BUILD)/python_c_reference.txt --csv results/bench/c_vs_python.csv --member $(MEMBER) --platform $(PLATFORM) $(PYLIMIT_ARG)
+	$(PYTHON) -B src/stretch/python/stage_a_numpy.py --file $(PYFILE) --short $(SHORT) --long $(LONG) --repeat $(PYREPEAT) --compare-c $(BUILD)/python_c_reference.txt --csv results/bench/c_vs_python.csv --member $(MEMBER) --platform $(PLATFORM) $(PYLIMIT_ARG)
+endif
 tools: $(BUILD)/data_profile$(EXE)
 run-stage0: stage0 | results/bench
 	$(BUILD)/stage0_sum_loop_O0_plain$(EXE) --n 1000000 --repeat 5

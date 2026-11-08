@@ -18,3 +18,7 @@ Replay, race, rival and assembly targets are laptop and Pi targets. Laptops prin
 Before sharing or submitting, each member runs `make clean && make && make test && make verify-golden` on their own machine and runs `make strict` at least once per operating system.
 
 The annotated assembly listing for CSC1104 must come from the AArch64 Raspberry Pi build. Laptop assembly output is useful for CSC1103 and is labelled with the host architecture.
+
+## C versus Python stretch
+
+Run `make stretch-python` to compare the FASTEST C Stage A ladder, `src/stretch/python/stage_a.py`, and `src/stretch/python/stage_a_numpy.py`. It writes C, pure-Python and NumPy rows to `results/bench/c_vs_python.csv`. Use `PYFILE=...`, `PYLIMIT=...`, `PYREPEAT=...`, and `PYTHON=...` to select the input, quick-run limit, repeats, and interpreter. NumPy is optional and its program reports `SKIPPED` when the package is unavailable.

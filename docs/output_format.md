@@ -34,3 +34,16 @@ platform,member,core,speed,trades_replayed,market_seconds,wall_seconds,avg_laten
 
 The rival sweep CSV begins with `platform,member` followed by its reaction,
 P&L, money-lost and trade-count fields.
+
+The optional C-versus-Python comparison appends
+`results/bench/c_vs_python.csv` with this schema:
+
+```text
+platform,member,implementation,file,trades,short,long,limit,repeats,median_total_ns,c_total_ns,times_slower_than_c,matches_c,python_version,numpy_version
+```
+
+The `stage_a.py` program writes one C reference row and one `py_pure` row;
+`stage_a_numpy.py` writes one `py_numpy` row. The C row is one run, while
+`results/bench/ladder.csv` contains the C benchmark medians. Python RESULT
+records use `peak_mem_kb=NA` because the scripts use no nonstandard memory
+measurement package.
