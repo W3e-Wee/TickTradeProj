@@ -1,8 +1,4 @@
 /* OS boundary for clocks, sleep, memory, terminal, and CPU affinity. */
-#if defined(__linux__)
-#define _GNU_SOURCE
-#endif
-#define _POSIX_C_SOURCE 200809L
 #include "timing.h"
 #include "platform.h"
 #include <stdio.h>

@@ -8,11 +8,11 @@ Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 - Rewrote `.gitignore` for generated C builds, results, and local datasets.
 - Rewrote `Makefile` to build C with `-ffp-contract=off`; the optional Python stretch is isolated to `stretch-python`.
 - Rewrote `README.md` for the completed newcomer guide and supported commands.
-- Rewrote `docs/design.md` with the implemented numerical policy and measured data limits.
+- Rewrote `docs/design.md` with the implemented numerical policy and overflow budget.
 - Replaced `config/platform_flags.mk` with portable compiler-flag defaults.
 - Rewrote `docs/migration_notes.md` as this per-file cleanup record.
-- Removed `.github/workflows/ci.yml` and `.github/`: CI not used
 - Recreated the pure-Python and NumPy Stage A stretch implementations as `src/stretch/python/stage_a.py` and `src/stretch/python/stage_a_numpy.py`.
+- Confirmed `.github/` and YAML automation are absent; removed the stale workflow reference from this migration record.
 
 ## Moved files
 
@@ -21,11 +21,8 @@ Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 - Moved `dev_1M - Copy (6).csv` to `data/dev_1M.csv` without changing its bytes.
 - Moved `stress_full - Copy (6).csv` to `data/stress_full.csv` without changing its bytes.
 - Moved `provided/group_info - Copy (6).txt` to `data/group_info.txt` without changing its bytes.
-- Moved `provided/timing.h` to `src/provided/timing.h` without changing its bytes.
-- Moved `provided/led.h` to `src/provided/led.h` without changing its bytes.
-- Moved `provided/trade_io.h` to `src/provided/trade_io.h` without changing its bytes.
-- Moved `provided/trade_io.c` to `src/provided/trade_io.c` without changing its bytes.
-- Moved `provided/test_helpers.c` to `src/provided/test_helpers.c` without changing its bytes.
+- Moved the five supplied course files into `provided/` without changing their bytes.
+- Moved the misplaced files from `src/provided/` to the required root `provided/` folder.
 - Moved and rewrote `src/stage0.c` as `src/stage0/stage0_sum_loop.c` to implement the Stage 0 benchmark interface.
 
 ## Follow-up implementation

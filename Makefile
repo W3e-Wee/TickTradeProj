@@ -9,6 +9,10 @@ MEMBER ?= member
 SUDO ?=
 REPEAT ?= 5
 MAX_TRADES ?= 10000000
+PI ?= 0
+PI_CFLAGS ?=
+NEON_CFLAGS ?=
+PROVIDED_DIR ?= provided
 FASTEST ?= v8
 CORE ?=
 SPEED ?= 1000
@@ -36,6 +40,13 @@ endif
 EXE :=
 endif
 BUILD := build/$(PLATFORM)
+ifeq ($(PI),1)
+ifneq ($(PLATFORM),linux)
+$(error PI=1 requires a Linux/AArch64 toolchain)
+endif
+PI_CFLAGS += -mcpu=cortex-a76
+NEON_CFLAGS += -march=armv8-a+simd
+endif
 ifeq ($(OS),Windows_NT)
 ifneq ($(MSYSTEM),)
 SHELL := sh
@@ -62,7 +73,12 @@ endif
 else
 RESULT_MKDIR = mkdir -p "$@"
 endif
-CPPFLAGS := -Isrc/common -Isrc/provided -Isrc/stage0 -Isrc/stageA_plus -Isrc/tools -Isrc/ladder -Isrc/stageC
+CPPFLAGS := -I$(PROVIDED_DIR) -Isrc/common -Isrc/stage0 -Isrc/stageA_plus -Isrc/tools -Isrc/ladder -Isrc/stageC -Isrc/stretch/soa
+ifeq ($(PLATFORM),linux)
+CPPFLAGS += -D_GNU_SOURCE
+else ifeq ($(PLATFORM),macos)
+CPPFLAGS += -D_POSIX_C_SOURCE=200809L
+endif
 CFLAGS := -std=c11 $(OPT) -ffp-contract=off -Wall -Wextra -Wpedantic $(STRICT_FLAGS) -MMD -MP
 LDFLAGS :=
 ifeq ($(OS),Windows_NT)
@@ -75,18 +91,21 @@ PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/nul
 PYTHON_PATH := $(shell command -v $(PYTHON) 2>/dev/null)
 GNUPLOT_PATH := $(shell command -v gnuplot 2>/dev/null)
 endif
+ifeq ($(V),1)
+$(info TickTrade: CC=$(CC) PLATFORM=$(PLATFORM) CPPFLAGS=$(CPPFLAGS) CFLAGS=$(CFLAGS) LDFLAGS=$(LDFLAGS) PROVIDED_DIR=$(PROVIDED_DIR))
+endif
 
 .DEFAULT_GOAL := all
-.PHONY: all help clean distclean test test-unit test-test20 test-consistency verify-golden test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots strict stage0-check parser-compare-test parser-dev-test
+.PHONY: all help clean distclean test test-unit test-test20 test-consistency verify-golden update-golden test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival plot-ladder parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots strict stage0-check parser-compare-test parser-dev-test
 
 all: $(BUILD)/stageA_stream$(EXE) $(BUILD)/platform_check$(EXE) $(BUILD)/parser_compare$(EXE) $(BUILD)/data_profile$(EXE)
 
-ENGINE_COMMON := src/ladder/engine.c src/common/cli.c src/common/platform.c src/common/result.c src/common/fixed_point.c src/common/indicators.c src/common/signal_rule.c src/common/memusage.c src/stageA_plus/reader.c src/stageA_plus/fast_parser.c src/provided/trade_io.c
+ENGINE_COMMON := src/ladder/engine.c src/common/cli.c src/common/platform.c src/common/result.c src/common/fixed_point.c src/common/indicators.c src/common/signal_rule.c src/common/memusage.c src/stageA_plus/reader.c src/stageA_plus/fast_parser.c $(PROVIDED_DIR)/trade_io.c
 ENGINE_VERSIONS := v0 v1 v2 v3 v4 v5 v6 v7 v8
 ENGINE_BINS := $(foreach version,$(ENGINE_VERSIONS),$(BUILD)/$(version)$(EXE))
 REPLAY_COMMON := src/stageC/replay_cli.c src/stageC/replay_engine.c src/common/replay.c src/common/replay_events.c src/common/latency.c src/common/rival.c src/common/signal_display.c $(ENGINE_COMMON)
 REPLAY_BINS := $(BUILD)/replay_v0$(EXE) $(BUILD)/replay_fast$(EXE)
-all: $(ENGINE_BINS) $(REPLAY_BINS)
+all: $(ENGINE_BINS) $(REPLAY_BINS) $(BUILD)/rival_sweep$(EXE) $(BUILD)/v9_soa$(EXE) $(BUILD)/neon_sum$(EXE)
 ifeq ($(OS),Windows_NT)
 COMPILER_TRIPLE := $(shell $(CC) -dumpmachine 2>NUL)
 else
@@ -123,7 +142,7 @@ $(foreach level,$(STAGE0_LEVELS),$(eval $(call STAGE0_RULES,$(level))))
 stage0: $(STAGE0_BINARIES)
 all: $(STAGE0_BINARIES)
 
-$(BUILD)/stageA_stream$(EXE): src/stageA/stageA_stream.c src/common/cli.c src/common/platform.c src/common/result.c src/common/fixed_point.c src/provided/trade_io.c | $(BUILD)
+$(BUILD)/stageA_stream$(EXE): src/stageA/stageA_stream.c src/common/cli.c src/common/platform.c src/common/result.c src/common/fixed_point.c $(PROVIDED_DIR)/trade_io.c | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DDEFAULT_SHORT_WINDOW=$(SHORT) -DDEFAULT_LONG_WINDOW=$(LONG) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 
 $(BUILD)/platform_check$(EXE): src/tools/platform_check.c src/common/platform.c | $(BUILD)
@@ -136,10 +155,12 @@ $(BUILD)/parser_compare$(EXE): src/stageA_plus/parser_compare.c src/stageA_plus/
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) -o $@
 
 help:
+	@echo "help: list targets and descriptions"
 	@echo "all: build portable C programs"
 	@echo "stage0: build Stage 0 programs"
 	@echo "stageA: build Stage A program"
 	@echo "stageA_plus: build Stage A+ parser tools"
+	@echo "parser_compare: build parser comparison program"
 	@echo "ladder: build engine ladder"
 	@echo "stageC: build replay and rival programs"
 	@echo "tools: build data analysis tools"
@@ -149,12 +170,16 @@ help:
 	@echo "run-stageA: run Stage A on course files"
 	@echo "plot-signals: export and plot Stage A signals"
 	@echo "plot-rival: generate and plot the rival reaction sweep"
+	@echo "plot-ladder: plot median ladder timings when gnuplot is installed"
 	@echo "test: run C unit and integration tests"
 	@echo "test-unit: run C unit tests"
 	@echo "test-test20: compare engines against test20 expected output"
 	@echo "test-replay: check schedule, output, and clean replay exit"
 	@echo "verify-golden: check test20 expected output and Stage A"
+	@echo "update-golden: regenerate deterministic v0 reference fields"
 	@echo "test-consistency: compare engine outputs across datasets"
+	@echo "parser-compare-test: compare reference and fast parsers on the fixture"
+	@echo "parser-dev-test: compare reference and fast parsers on development data"
 	@echo "profile-data: profile development and stress files"
 	@echo "bench: benchmark the engine ladder"
 	@echo "bench-pi: benchmark on a pinned Raspberry Pi core"
@@ -210,38 +235,85 @@ test-unit: $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_platform.c src/common/platform.c -o $(BUILD)/test_platform$(EXE) $(LDFLAGS)
 	$(BUILD)/test_platform$(EXE)
 $(BUILD)/v0$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O0 -DENGINE_VERSION=v0 $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O0 -DENGINE_VERSION=v0 -DENGINE_BUILD_FLAGS=\"-O0\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v1$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O2 -DENGINE_VERSION=v1 $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O2 -DENGINE_VERSION=v1 -DENGINE_BUILD_FLAGS=\"-O2\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v2$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O3 -DENGINE_VERSION=v2 $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O3 -DENGINE_VERSION=v2 -DENGINE_BUILD_FLAGS=\"-O3\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v3$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(PI_CFLAGS) -DENGINE_VERSION=v3 $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PI_CFLAGS) -DENGINE_VERSION=v3 -DENGINE_BUILD_FLAGS=\"-O2+$(if $(filter 1,$(PI)),mcpu-cortex-a76,portable)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v4$(EXE): src/ladder/v4_fast_parser.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v5$(EXE): src/ladder/v5_running_sum.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v6$(EXE): src/ladder/v6_fixed_point.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v7$(EXE): src/ladder/v7_in_memory.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_STATIC_STORAGE -DMAX_TRADES=$(MAX_TRADES) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)\" -DENGINE_STATIC_STORAGE -DMAX_TRADES=$(MAX_TRADES) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v8$(EXE): src/ladder/v8_malloc_exact.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 
 ladder: $(ENGINE_BINS)
-test-consistency: $(BUILD)/test_consistency$(EXE)
-	$(BUILD)/test_consistency$(EXE) --file data/dev_1M.csv --short $(SHORT) --long $(LONG)
-	$(BUILD)/test_consistency$(EXE) --file data/stress_full.csv --short $(SHORT) --long $(LONG)
+HAS_TEST20 := $(wildcard $(DATA)/test20.csv)
+HAS_DEV_DATA := $(wildcard $(DATA)/dev_1M.csv)
+HAS_STRESS_DATA := $(wildcard $(DATA)/stress_full.csv)
+GOLDEN_DIR := tests/golden
+$(GOLDEN_DIR):
+	$(RESULT_MKDIR)
+ifeq ($(HAS_TEST20),)
 test-test20: $(BUILD)/test_consistency$(EXE)
-	$(BUILD)/test_consistency$(EXE) --file data/test20.csv --expected data/test20_expected.txt --short 3 --long 5
-verify-golden: test-test20
-	$(BUILD)/stageA_stream$(EXE) --file data/test20.csv --short 3 --long 5
+	@echo "NOTE: using fixture because $(DATA)/test20.csv is missing."
+	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5
+else
+test-test20: $(BUILD)/test_consistency$(EXE)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/test20.csv --expected $(DATA)/test20_expected.txt --short 3 --long 5
+endif
+ifeq ($(and $(HAS_DEV_DATA),$(HAS_STRESS_DATA)),)
+test-consistency: $(BUILD)/test_consistency$(EXE)
+	@echo "NOTE: using fixture because one or more course datasets are missing."
+	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5
+else
+test-consistency: $(BUILD)/test_consistency$(EXE)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/stress_full.csv --short $(SHORT) --long $(LONG)
+endif
+update-golden: $(BUILD)/test_consistency$(EXE) | $(GOLDEN_DIR)
+	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5 --write-golden $(GOLDEN_DIR)/fixture_group$(GROUP).txt
+ifneq ($(HAS_TEST20),)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/test20.csv --short 3 --long 5 --write-golden $(GOLDEN_DIR)/test20_group$(GROUP).txt
+	@echo "Golden test20 refresh complete."
+endif
+ifneq ($(HAS_DEV_DATA),)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG) --write-golden $(GOLDEN_DIR)/dev_1M_group$(GROUP).txt
+else
+	@echo "SKIPPED: development dataset missing"
+endif
+ifeq ($(HAS_TEST20),)
+verify-golden: test-test20 $(BUILD)/test_consistency$(EXE) $(BUILD)/stageA_stream$(EXE)
+	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --expected $(GOLDEN_DIR)/fixture_group$(GROUP).txt --short 3 --long 5
+	$(BUILD)/stageA_stream$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5
+else
+verify-golden: test-test20 $(BUILD)/test_consistency$(EXE)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/test20.csv --expected $(GOLDEN_DIR)/test20_group$(GROUP).txt --short 3 --long 5
+ifneq ($(HAS_DEV_DATA),)
+	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --expected $(GOLDEN_DIR)/dev_1M_group$(GROUP).txt --short $(SHORT) --long $(LONG)
+else
+	@echo "SKIPPED: development dataset missing"
+endif
+	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/test20.csv --short 3 --long 5
+endif
 $(BUILD)/test_consistency$(EXE): tests/test_consistency.c $(ENGINE_COMMON) | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_STATIC_STORAGE -DMAX_TRADES=$(MAX_TRADES) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DTICKTRADE_SOA_NO_MAIN -DENGINE_STATIC_STORAGE -DMAX_TRADES=$(MAX_TRADES) $(filter-out src/stretch/soa/v9_soa.c,$(filter %.c,$^)) src/stretch/soa/v9_soa.c $(LDFLAGS) -lm -o $@
 parser-compare-test: $(BUILD)/parser_compare$(EXE) | results/bench
 	$(BUILD)/parser_compare$(EXE) --file tests/fixtures/trades.csv --repeat 5
+ifeq ($(HAS_DEV_DATA),)
 parser-dev-test: $(BUILD)/parser_compare$(EXE) | results/bench
-	$(BUILD)/parser_compare$(EXE) --file data/dev_1M.csv --repeat 5
+	@echo "NOTE: using parser fixture because course dataset is missing."
+	$(BUILD)/parser_compare$(EXE) --file tests/fixtures/trades.csv --repeat 5
+else
+parser-dev-test: $(BUILD)/parser_compare$(EXE) | results/bench
+	$(BUILD)/parser_compare$(EXE) --file $(DATA)/dev_1M.csv --repeat 5
+endif
 test-replay: $(REPLAY_BINS) | results/replay
 	$(BUILD)/replay_v0$(EXE) --file tests/fixtures/replay.csv --short 10 --long 60 --speed 1000 --member test --no-display
 	$(BUILD)/replay_fast$(EXE) --file tests/fixtures/replay.csv --short 10 --long 60 --speed 1000 --member test --no-display
@@ -255,15 +327,14 @@ parser_compare: $(BUILD)/parser_compare$(EXE)
 stageC: all $(BUILD)/rival_sweep$(EXE)
 stretch: $(BUILD)/v9_soa$(EXE) $(BUILD)/neon_sum$(EXE)
 	$(BUILD)/neon_sum$(EXE)
-	$(BUILD)/v9_soa$(EXE) --file data/test20.csv --short 3 --long 5
+	$(BUILD)/v9_soa$(EXE) --file $(if $(wildcard $(DATA)/test20.csv),$(DATA)/test20.csv,tests/fixtures/trades.csv) --short 3 --long 5
 
 ifeq ($(strip $(PYTHON_PATH)),)
 stretch-python:
 	@echo "SKIPPED: python not found"
 else ifeq ($(wildcard $(PYFILE)),)
 stretch-python:
-	@echo "ERROR: missing dataset: $(PYFILE)"
-	@exit 6
+	@echo "SKIPPED: dataset not found: $(PYFILE)"
 else
 ifeq ($(strip $(PYLIMIT)),)
 PYLIMIT_ARG :=
@@ -277,22 +348,22 @@ stretch-python: $(BUILD)/$(FASTEST)$(EXE) | results/bench
 endif
 tools: $(BUILD)/data_profile$(EXE)
 run-stage0: stage0 | results/bench
-	$(BUILD)/stage0_sum_loop_O0_plain$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_loop_O0_guarded$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O0_plain$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O0_guarded$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_loop_O1_plain$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_loop_O1_guarded$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O1_plain$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O1_guarded$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_loop_O2_plain$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_loop_O2_guarded$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O2_plain$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O2_guarded$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_loop_O3_plain$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_loop_O3_guarded$(EXE) --n 1000000 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O3_plain$(EXE) --n 100 --reps 10 --repeat 5
-	$(BUILD)/stage0_sum_recursion_O3_guarded$(EXE) --n 100 --reps 10 --repeat 5
+	$(BUILD)/stage0_sum_loop_O0_plain$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O0_guarded$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O0_plain$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O0_guarded$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O1_plain$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O1_guarded$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O1_plain$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O1_guarded$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O2_plain$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O2_guarded$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O2_plain$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O2_guarded$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O3_plain$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_loop_O3_guarded$(EXE) --n 100000000 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O3_plain$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
+	$(BUILD)/stage0_sum_recursion_O3_guarded$(EXE) --n 10000 --reps 1 --repeat $(REPEAT)
 run-stageA: $(BUILD)/stageA_stream$(EXE)
 	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/test20.csv --short 3 --long 5
 	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG)
@@ -303,37 +374,71 @@ ifeq ($(strip $(GNUPLOT_PATH)),)
 else
 	$(GNUPLOT_PATH) scripts/plot_signals.gp
 endif
-plots: plot-signals plot-rival
+plots: plot-signals plot-rival plot-ladder
 profile-data: $(BUILD)/data_profile$(EXE) | results/logs
 	$(BUILD)/data_profile$(EXE) --output results/logs/data_profile.txt $(DATA)/dev_1M.csv $(DATA)/stress_full.csv
-bench: ladder
-	$(BUILD)/v0$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-	$(BUILD)/v4$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-	$(BUILD)/v5$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-	$(BUILD)/v6$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-	$(BUILD)/v8$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-memory: $(BUILD)/v8$(EXE)
-	$(BUILD)/v8$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG)
-bench-pi: ladder
-ifeq ($(OS),Windows_NT)
-	@echo "NOT VERIFIED: Raspberry Pi benchmarking is unavailable on Windows."
-else ifneq ($(shell uname -s),Linux)
-	@echo "NOT VERIFIED: Raspberry Pi benchmarking requires Linux and taskset."
+LADDER_CSV := results/bench/ladder_$(PLATFORM)_$(MEMBER).csv
+MEMORY_CSV := results/bench/memory_$(PLATFORM).csv
+bench: ladder $(BUILD)/v9_soa$(EXE) | results/bench
+	$(BUILD)/v0$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v1$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v2$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v3$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v4$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v5$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v6$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v7$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v8$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v9_soa$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
+	$(MAKE) plot-ladder
+plot-ladder: | results/plots
+ifeq ($(strip $(GNUPLOT_PATH)),)
+	@echo "SKIPPED: gnuplot not found"
+else ifeq ($(wildcard $(LADDER_CSV)),)
+	@echo "SKIPPED: ladder benchmark CSV not found"
 else
-	$(BUILD)/platform_check$(EXE)
-	taskset -c $(PIN_CORE) $(MAKE) bench
+	$(GNUPLOT_PATH) -e "input='$(LADDER_CSV)'; output='results/plots/ladder_$(PLATFORM)_$(MEMBER).png'" scripts/plot_ladder.gp
+endif
+memory: ladder $(BUILD)/v9_soa$(EXE) | results/bench
+	$(BUILD)/v0$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v1$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v2$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v3$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v4$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v5$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v6$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v7$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v8$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+	$(BUILD)/v9_soa$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
+ifeq ($(OS),Windows_NT)
+bench-pi:
+	@echo "SKIPPED: Raspberry Pi benchmarking requires Linux."
+else ifneq ($(HOST_UNAME),Linux)
+bench-pi:
+	@echo "SKIPPED: Raspberry Pi benchmarking requires Linux."
+else ifeq ($(shell command -v taskset 2>/dev/null),)
+bench-pi:
+	@echo "SKIPPED: taskset not found"
+else
+bench-pi: $(BUILD)/platform_check$(EXE)
+	@if $(BUILD)/platform_check$(EXE) --require-pi; then $(MAKE) clean && taskset -c $(PIN_CORE) $(MAKE) PI=1 bench; else code=$$?; if test $$code -eq 77; then exit 0; else exit $$code; fi; fi
 endif
 ifeq ($(OS),Windows_NT)
 perf:
-	@echo "NOT VERIFIED: Linux perf counters are unavailable on Windows."
+	@echo "SKIPPED: Linux perf is unavailable on Windows."
 else
+ifeq ($(PLATFORM),linux)
 PERF_PATH := $(shell command -v perf 2>/dev/null)
 ifeq ($(strip $(PERF_PATH)),)
 perf:
-	@echo "NOT VERIFIED: Linux perf is not installed."
+	@echo "SKIPPED: perf not found"
 else
 perf: ladder
 	$(PERF_PATH) stat -d $(BUILD)/v8 --file $(FILE) --short $(SHORT) --long $(LONG)
+endif
+else
+perf:
+	@echo "SKIPPED: Linux perf is unavailable on this platform."
 endif
 endif
 replay-realtime: $(REPLAY_BINS) | results/replay
@@ -379,10 +484,12 @@ $(BUILD)/replay_fast$(EXE): src/stageC/replay_fast.c $(REPLAY_COMMON) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DREPLAY_FAST_LABEL=\"$(FASTEST)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/rival_sweep$(EXE): src/stageC/rival_sweep.c src/stageA_plus/fast_parser.c src/common/rival.c src/common/platform.c src/common/fixed_point.c | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
-$(BUILD)/v9_soa$(EXE): src/stretch/soa/v9_soa.c src/stageA_plus/fast_parser.c src/common/platform.c src/common/result.c src/common/signal_rule.c | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
-$(BUILD)/neon_sum$(EXE): src/stretch/neon/neon_sum.c | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(NEON_CFLAGS) $< -o $@
+$(BUILD)/v9_soa$(EXE): src/stretch/soa/v9_soa.c src/stageA_plus/fast_parser.c src/common/platform.c src/common/result.c src/common/fixed_point.c | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)-SoA\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+$(BUILD)/neon_scalar.o: src/stretch/neon/neon_scalar.c | $(BUILD)
+	$(CC) $(CPPFLAGS) -std=c11 -O3 -ffp-contract=off -Wall -Wextra -Wpedantic -MMD -MP -c $< -o $@
+$(BUILD)/neon_sum$(EXE): src/stretch/neon/neon_sum.c src/common/platform.c $(BUILD)/neon_scalar.o | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(NEON_CFLAGS) src/stretch/neon/neon_sum.c src/common/platform.c $(BUILD)/neon_scalar.o $(LDFLAGS) -lm -o $@
 rival: $(BUILD)/rival_sweep$(EXE) | results/rival
 	$(BUILD)/rival_sweep$(EXE) --file $(FILE) --output results/rival/sweep.csv --member $(MEMBER)
 plot-rival: rival | results/plots
@@ -396,7 +503,7 @@ asm: | $(BUILD) results/asm
 strict:
 	@$(MAKE) clean
 	@$(MAKE) STRICT_FLAGS=-Werror all test
-$(BUILD)/stage0_check$(EXE): src/provided/test_helpers.c | $(BUILD)
+$(BUILD)/stage0_check$(EXE): $(PROVIDED_DIR)/test_helpers.c | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@
 stage0-check: $(BUILD)/stage0_check$(EXE)
 	$(BUILD)/stage0_check$(EXE)

@@ -33,6 +33,8 @@ through `signal_display.c`.
 
 Python comparison code is isolated to `src/stretch/python/` and is called only by `make stretch-python`.
 
+For run procedures and evidence maps, see [RUNBOOK](RUNBOOK.md), [STAGE_GUIDE](STAGE_GUIDE.md), [MAKE_COMMANDS](MAKE_COMMANDS.md), [FILES_BY_STAGE](FILES_BY_STAGE.md), [PREREQUISITES](PREREQUISITES.md), and [RESULTS_LOCATIONS](RESULTS_LOCATIONS.md).
+
 ## Ladder relationships
 
 | Version | Planned change | Status |
@@ -42,8 +44,8 @@ Python comparison code is isolated to `src/stretch/python/` and is called only b
 | v2 | v0 at `-O3` | implemented |
 | v3 | optional `PI_CFLAGS` tuning | implemented; hardware tuning must be supplied and measured |
 | v4 | manual decimal parser | implemented |
-| v5 | compensated running-sum SMA | implemented |
-| v6 | fixed-point VWAP/SMA | implemented |
+| v5 | compensated running-sum SMA with exact integer crossover classification | implemented |
+| v6 | fixed-point VWAP/SMA and exact crossover classification | implemented |
 | v7 | bounded static in-memory trades | implemented |
 | v8 | count then exact-sized heap storage | implemented |
 | v9_soa | stretch struct-of-arrays engine | implemented |

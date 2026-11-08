@@ -8,6 +8,7 @@ static const char expected_header[] =
     "avg_processing_ns,max_lag_us,pct_behind,dropped_events,buys,sells,"
     "pnl_vs_rival_r1";
 
+/* Validate one replay CSV header and its row widths. */
 static int replay_csv_valid(const char *path)
 {
     char line[1024];
@@ -30,6 +31,7 @@ static int replay_csv_valid(const char *path)
     return ok;
 }
 
+/* Check every replay integration output against the expected schema. */
 int main(int argc, char **argv)
 {
     if (argc < 2) return 2;

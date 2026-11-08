@@ -92,5 +92,3 @@ build/
 data/*.csv
 *.o
 *.exe
-__pycache__/
-*.pyc

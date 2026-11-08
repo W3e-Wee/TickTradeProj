@@ -2,6 +2,7 @@
 #include "check.h"
 #include "replay_events.h"
 
+/* Exercise replay event ordering, draining, and queue overflow accounting. */
 int main(void)
 {
     ReplayEvent storage[3], drained[2], event;

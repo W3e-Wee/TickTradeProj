@@ -1,78 +1,98 @@
 # Tick-to-Trade on the Edge
 
-This C11 coursework project reads Binance-style trade CSV files, computes VWAP, one-second OHLC bars and moving-average crossover signals, then compares streaming and in-memory implementations. Replay is offline and does not connect to an exchange or place orders. Replay, race, rival and assembly targets run on laptops and the Pi; the LED is printed on laptops and hardware-driven on the Pi, while assembly output follows the host architecture.
+## What this project does
 
-## Platforms and prerequisites
+This C11 coursework project reads offline Binance-style trade CSV files, computes VWAP, one-second OHLC bars and moving-average crossover signals, and compares streaming, in-memory, replay and optimized implementations. It does not connect to an exchange or place orders.
 
-The project targets 64-bit Linux, macOS and Windows with GCC or Clang and GNU Make. Windows builds are tested with MSYS2 UCRT64 GCC/Make or `mingw32-make`. Optional tools are gnuplot for PNG output, Linux `perf` for hardware counters, and an AArch64 Raspberry Pi for the Pi benchmark. Windows timer resolution uses `-lwinmm`, which the Makefile adds automatically.
+## Supported platforms and prerequisites
 
-Install a C compiler and Make using your platform package manager. Install gnuplot only when you want PNG plots. The four course data files are already in `data/`; see [data/README.md](data/README.md). Keep supplied inputs unchanged.
+The project uses GCC or Clang and GNU Make on 64-bit Linux, macOS, Windows and Raspberry Pi OS. MSVC is not supported. On Windows, use the MSYS2 UCRT64 terminal or invoke `mingw32-make` from cmd or PowerShell.
 
-## Build and run
+| Platform | Install the compiler and GNU Make | Optional plotting and stretch tools |
+| --- | --- | --- |
+| Debian or Ubuntu | `sudo apt install build-essential` | `sudo apt install gnuplot python3 python3-numpy` |
+| Windows MSYS2 UCRT64 | `pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make` | `pacman -S mingw-w64-ucrt-x86_64-gnuplot mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-numpy` |
+| macOS | `xcode-select --install`, then `brew install make` | `brew install gnuplot python numpy` |
+| Raspberry Pi OS | `sudo apt install build-essential` | `sudo apt install gnuplot python3 python3-numpy linux-perf util-linux` |
+
+For Homebrew Make, use `gmake` or add Homebrew's GNU Make directory to `PATH`. Install NumPy only for `stretch-python`; other C targets do not need Python. Package names and commands are also listed in [docs/PREREQUISITES.md](docs/PREREQUISITES.md). See the [MSYS2 package listings](https://packages.msys2.org/groups/mingw-w64-ucrt-x86_64-toolchain), [Homebrew Make](https://formulae.brew.sh/formula/make) and [Homebrew gnuplot](https://formulae.brew.sh/formula/gnuplot) for package details.
+
+## Course data
+
+Place `test20.csv`, `dev_1M.csv`, `stress_full.csv`, and `test20_expected.txt` under `data/`. Keep supplied input files unchanged. The large datasets are distributed separately and are ignored by Git; [data/README.md](data/README.md) lists the required names. Tests use the fixture when a course dataset is absent.
+
+## Quick start
+
+From the repository root, run:
 
 ```sh
 make
 make test
-make run-stage0
+make verify-golden
 make run-stageA
-make test-test20
-make test-consistency
 ```
 
-Select the group’s window sizes with `make GROUP=07 ...`. `config/groups.mk` records all 21 short/long window pairs. Individual ladder programs accept `--file`, `--short`, and `--long`; run `build/<platform>/v8 --help` for the usage line.
+On macOS, substitute `gmake` if GNU Make is installed under that name. In Windows PowerShell, use `mingw32-make` for each command. The VS Code tasks in *Terminal > Run Task…* cover the common build, test, benchmark and plot actions.
 
-## Stages and targets
+## Choose your group
 
-| Target | Result |
-| --- | --- |
-| `all` | Build Stage A, parser/profile/platform tools, Stage 0 variants and ladder v0–v8. |
-| `stage0` / `run-stage0` | Build/run O0–O3 loop and recursion benchmarks, guarded and plain. |
-| `stageA` / `run-stageA` | Build/run the streaming CSV strategy on test20 and development data. |
-| `stageA_plus` / `parser_compare` | Build parser comparison; `make parser-dev-test` checks every development row. |
-| `ladder` | Build v0–v8. v0/v1/v2 use O0/O2/O3, v3 accepts optional `PI_CFLAGS`, v4 uses the manual parser, v5 uses rolling sums, v6 uses fixed point, and v7/v8 preload bounded static/exact-sized arrays. |
-| `test-test20` | Compare ladder outputs with each other and the supplied expected summary. |
-| `verify-golden` | Check the supplied test20 summary against the ladder and Stage A. |
-| `test-consistency` | Check development and stress datasets across ladder versions. |
-| `profile-data` | Write measured numeric ranges and fixed-point sizing to `results/logs/data_profile.txt`. |
-| `bench` / `memory` | Run selected ladder versions and report timing/peak-memory fields from their RESULT records. |
-| `replay-realtime`, `replay-100x`, `replay-1000x` | Laptop and Pi replay at selected speed with latency, lag and signal summaries. |
-| `race-v0` / `race-fast` | Laptop and Pi replay processes for side-by-side comparison. |
-| `rival` | Laptop and Pi 25-point reaction-time sweep in `results/rival/sweep.csv`. |
-| `asm` | Laptop and Pi host listing at `results/asm/<core>_<arch>.s`. |
-| `plot-signals` / `plots` | Export a 2,000-trade signal slice; render it when gnuplot is installed. |
-| `stretch` | Run the SoA and NEON kernel comparison. |
-| `stretch-python` | Compare the C Stage A engine with pure Python and NumPy; writes `results/bench/c_vs_python.csv`. |
-| `perf` | Run Linux hardware counters; reports NOT VERIFIED on Windows. |
-| `bench-pi` | Run the ladder benchmark; Pi-specific results require running on a Raspberry Pi. |
-| `strict` | Clean rebuild with warnings treated as errors and run the full test suite. |
-| `clean` / `distclean` | Remove build products; distclean also removes generated results. |
+`GROUP` selects the short and long moving-average windows in `config/groups.mk`. For example, `make GROUP=07 test-consistency` uses the configured windows for that group. `test20.csv` always uses windows 3 and 5.
 
-All engines emit exactly one `RESULT` record; fields are described in [docs/output_format.md](docs/output_format.md). Timing values are machine-specific. Do not copy them into reports without rerunning the command on the named hardware. The C profiler measures the supplied files; it does not assume their names describe their row counts.
+## Stage guide and Make targets
 
-## Results and reports
+| Stage | Main commands | Purpose |
+| --- | --- | --- |
+| Stage 0 | `make stage0-check`, `make run-stage0` | Check the supplied helpers and compare loop/recursive sums across optimization settings. |
+| Stage A | `make run-stageA`, `make plot-signals` | Stream trades, compute indicators, compare with the course oracle and plot a signal slice. |
+| Stage A+ | `make parser-compare-test`, `make parser-dev-test` | Compare the supplied reader with the hand-written parser. |
+| Stage B | `make profile-data`, `make bench`, `make memory` | Profile numeric ranges, measure the ladder and record memory use. |
+| Stage C | `make replay-realtime`, `make replay-100x`, `make replay-1000x`, `make asm` | Replay trades, collect latency and lag, and generate a host assembly listing. |
+| Rival | `make rival`, `make plot-rival` | Compare fills over a reaction-time sweep. |
+| Race | `make race-v0` and `make race-fast` | Run the baseline and fastest cores in separate terminals with the same file and speed. |
+| Stretch | `make stretch`, `make stretch-python` | Run the NEON-intrinsic kernel, SoA engine and optional Python comparison. |
 
-Generated artifacts live under `results/`. `make plot-signals` creates `results/plots/signals.dat`; with gnuplot it also creates the PNG. `make rival` writes `results/rival/sweep.csv`. The corresponding gnuplot templates are under `scripts/`. The design, architecture, numerical policy, migration record and output contract are in `docs/`.
+Use the four audited references for copy-paste commands, source mapping, required tools and output locations: [MAKE_COMMANDS](docs/MAKE_COMMANDS.md), [FILES_BY_STAGE](docs/FILES_BY_STAGE.md), [PREREQUISITES](docs/PREREQUISITES.md), and [RESULTS_LOCATIONS](docs/RESULTS_LOCATIONS.md). The developer overview is [STAGE_GUIDE](docs/STAGE_GUIDE.md); platform procedures are in [RUNBOOK](docs/RUNBOOK.md).
 
-The `results/` subfolders are present so a fresh clone can write outputs immediately. Make targets recreate any required output folder if it was removed.
+## Read the results
 
-## Manual validation gate
+Each engine prints one `RESULT` line with trade count, parameters, VWAP, bars, signal counts, signal hash and timing fields. Compare signal counts and hash exactly; compare VWAP within the documented tolerance. Stage 0, parser, ladder, replay, rival and Python measurements are recorded under `results/`; generated CSV schemas are documented in [docs/output_format.md](docs/output_format.md). Measurement values are machine-specific and should be produced by rerunning the corresponding program.
 
-Before sharing or submitting, each member runs `make clean && make && make test && make verify-golden` on their own machine, and runs `make strict` at least once per operating system.
+## Benchmarking on a laptop or Pi
 
-## Laptop and Pi replay
+Run `make profile-data` before choosing fixed-point scales. `make bench REPEAT=5` performs a discarded warm-up and repeated runs, appends ladder timing rows, and plots them if gnuplot is installed. For Pi-only pinning, run `make PI=1 bench-pi PIN_CORE=1`; `make perf` requests Linux hardware counters. Record the model, compiler, flags, governor, core affinity and command with each team measurement. Use `SUDO=sudo` on Pi replay commands when access to the real LEDs requires it.
 
-Quick start: `make replay-realtime DURATION=20`, then `make replay-1000x FILE=data/dev_1M.csv`. Replay accepts `--file`, `--short`, `--long`, `--speed`, `--duration-sec`, `--start-offset-sec`, `--pin`, `--no-display`, `--out-dir`, `--member` and `--help`. The provided LED helper prints LED state on laptops and uses hardware on a supported Pi; Windows timer support is linked with `-lwinmm` by Make. The annotated CSC1104 assembly listing must be generated by the AArch64 Pi build.
+## Project map
 
-For Raspberry Pi measurements, record the exact model, compiler flags, governor, core affinity and command. `make perf` is Linux-only; hardware counters and Pi-specific timings are NOT VERIFIED on other hosts. The source uses `-ffp-contract=off`; it does not enable unsafe floating-point transformations.
+```text
+Makefile, README.md       Build and newcomer guide
+config/                   Group windows and platform flags
+data/                     Separately supplied datasets
+provided/                 Unmodified course helper files
+src/common/               Shared indicators, timing, replay and result modules
+src/stage0/ stageA/       Early stages
+src/stageA_plus/ ladder/  Parser and efficiency ladder
+src/stageC/               Replay, race and rival programs
+src/stretch/              NEON intrinsics, SoA and exactly two Python files
+tests/                    C unit/integration checks and fixtures
+scripts/                  Gnuplot programs
+results/ build/           Generated, ignored output
+docs/                     Design, runbook, stage and evidence documentation
+```
 
-### C versus Python stretch goal
+## Add a ladder version
 
-`make stretch-python` runs the configured C ladder engine, then the pure-Python and NumPy Stage A implementations. Python and NumPy are optional; no other Make target calls Python. Override `PYTHON` to select an interpreter, `PYFILE` to select input, `PYLIMIT` to cap the number of rows for a quick run, and `PYREPEAT` to select timed repeats. The default input is `data/stress_full.csv`. Install NumPy with `pip install numpy`, or in MSYS2 UCRT64 use `pacman -S mingw-w64-ucrt-x86_64-python-numpy`. The full stress-file pure-Python run is slow by design. Measurements append to `results/bench/c_vs_python.csv`; Python `peak_mem_kb=NA` because there is no portable standard-library process-memory measurement.
+Add a front end under `src/ladder/`, connect it to the shared engine contract, add its source and compile flags to the Makefile, include it in `test-consistency`, benchmark rows and file/output documentation, then run `make test` and `make strict`. Keep crossover decisions on exact scaled-integer comparisons.
 
-## Layout
+## Troubleshooting
 
-`src/common/` contains portable shared modules; `src/provided/` preserves the supplied helper files; `src/stage0/`, `src/stageA/`, `src/stageA_plus/`, `src/ladder/`, `src/stageC/`, `src/tools/` and `src/stretch/` contain their respective programs. `tests/` contains unit and integration checks. Course inputs remain in `data/`.
+Use GNU Make, not the BSD `make` shipped with macOS. On Windows, start the UCRT64 terminal or use `mingw32-make`; MSVC is unsupported. The Makefile adds `_GNU_SOURCE` on Linux and `_POSIX_C_SOURCE=200809L` on macOS; Windows receives neither. Missing gnuplot or Python only skips the plot or Python stretch target. Normal C builds and tests do not require Python.
 
-## Academic integrity
+## Stretch goals and academic integrity
 
-Before submission, complete the group’s AI-assistance disclosure in line with course rules and review every source file as a team.
+The NEON comparison currently uses compiler intrinsics and a portable scalar `-O3` reference; the generated AArch64 machine code is not verified on this Windows host. SoA v9 participates in consistency checks. Replay reports p50/p99 latency. Pure Python and NumPy are isolated to `src/stretch/python/` and `make stretch-python`.
+
+Before submission, complete the group’s AI-assistance disclosure under course rules and review every source file as a team. Prediction-logbook entries and signatures are intentionally left for the members.
+
+## Manual quality gate
+
+Before sharing, each member runs `make clean`, `make`, `make test` and `make verify-golden` on their own machine, then runs `make strict` on each available operating system. The `results/` subfolders exist so a fresh clone can write output, and Make recreates any required folder if it was removed.

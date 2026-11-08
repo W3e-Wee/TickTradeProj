@@ -6,6 +6,7 @@
 #include "fixed_point.h"
 #include "indicators.h"
 #include "memusage.h"
+#include "platform.h"
 #include "reader.h"
 #include "signal_rule.h"
 #include "trade.h"
@@ -19,6 +20,10 @@
 #define MAX_TRADES 10000000U
 #endif
 #define ENGINE_MAX_WINDOW 100000
+#define ENGINE_MAX_REPEATS 1000U
+#ifndef ENGINE_BUILD_FLAGS
+#define ENGINE_BUILD_FLAGS "Makefile defaults"
+#endif
 #if defined(ENGINE_STATIC_STORAGE)
 static Trade engine_static_trades[MAX_TRADES];
 #endif
@@ -283,23 +288,112 @@ fail:
     return 0;
 }
 
-/* Parse common engine options, run one version, and emit the shared output contract. */
+/* Sort small benchmark arrays so every reported median is reproducible. */
+static void engine_sort_times(uint64_t *values, unsigned count)
+{
+    for (unsigned i = 1; i < count; ++i) {
+        uint64_t value = values[i];
+        unsigned j = i;
+        while (j > 0 && values[j - 1U] > value) { values[j] = values[j - 1U]; --j; }
+        values[j] = value;
+    }
+}
+
+/* Quote one CSV field while preserving commas and embedded quote characters. */
+static int engine_csv_field(FILE *file, const char *value)
+{
+    if (fputc('"', file) == EOF) return 0;
+    for (const char *at = value; *at != '\0'; ++at) {
+        if (*at == '"' && fputc('"', file) == EOF) return 0;
+        if (fputc(*at, file) == EOF) return 0;
+    }
+    return fputc('"', file) != EOF;
+}
+
+/* Append one benchmark summary row and create its header for a new file. */
+static int engine_write_bench_csv(const char *path, const char *member,
+                                  const RunResult *result, unsigned repeats,
+                                  uint64_t best_ns, uint64_t worst_ns)
+{
+    static const char header[] = "platform,member,version,file,trades,repeats,median_total_ns,best_total_ns,worst_total_ns,median_process_ns,trades_per_sec,peak_mem_kb,compiler,flags";
+    FILE *file = fopen(path, "a+");
+    if (file == NULL) return 0;
+    if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return 0; }
+    long end = ftell(file);
+    int written = end > 0;
+    if (end < 0 || !result_csv_header_once(file, &written, header)) { fclose(file); return 0; }
+    int ok = engine_csv_field(file, plat_platform_name()) && fputc(',', file) != EOF &&
+        engine_csv_field(file, member) && fprintf(file, ",") >= 0 &&
+        engine_csv_field(file, result->version) && fputc(',', file) != EOF &&
+        engine_csv_field(file, result->file) &&
+        fprintf(file, ",%llu,%u,%llu,%llu,%llu,%llu,%.6f,%llu,",
+            (unsigned long long)result->trades, repeats,
+            (unsigned long long)result->total_ns, (unsigned long long)best_ns,
+            (unsigned long long)worst_ns, (unsigned long long)result->process_ns,
+            result->total_ns == 0 ? 0.0 : (double)result->trades * 1e9 / result->total_ns,
+            (unsigned long long)result->peak_mem_kb) >= 0 &&
+        engine_csv_field(file, __VERSION__) && fputc(',', file) != EOF &&
+        engine_csv_field(file, ENGINE_BUILD_FLAGS) && fputc('\n', file) != EOF;
+    return fclose(file) == 0 && ok;
+}
+
+/* Parse engine options, optionally run warm-up/repeats, and emit shared output. */
 int engine_program_main(int argc, char **argv, const EngineConfig *config)
 {
-    const char *path = NULL; int short_window = DEFAULT_SHORT_WINDOW, long_window = DEFAULT_LONG_WINDOW;
+    const char *path = NULL, *csv_path = NULL, *member = "member";
+    int short_window = DEFAULT_SHORT_WINDOW, long_window = DEFAULT_LONG_WINDOW;
+    unsigned repeats = 1;
+    int benchmark = 0;
     for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "--help") == 0) { printf("Usage: %s --file CSV [--short N] [--long N]\n", argv[0]); return EXIT_OK; }
+        if (strcmp(argv[i], "--help") == 0) {
+            printf("Usage: %s --file CSV [--short N] [--long N] [--repeat N --csv PATH]\n", argv[0]);
+            return EXIT_OK;
+        }
         if (i + 1 >= argc) return EXIT_BAD_INPUT;
         const char *key = argv[i++], *value = argv[i];
         if (strcmp(key, "--file") == 0) path = value;
         else if (strcmp(key, "--short") == 0) { if (!cli_parse_positive_int(value, ENGINE_MAX_WINDOW, &short_window)) return EXIT_BAD_INPUT; }
         else if (strcmp(key, "--long") == 0) { if (!cli_parse_positive_int(value, ENGINE_MAX_WINDOW, &long_window)) return EXIT_BAD_INPUT; }
+        else if (strcmp(key, "--repeat") == 0) {
+            int parsed;
+            if (!cli_parse_positive_int(value, (int)ENGINE_MAX_REPEATS, &parsed)) return EXIT_BAD_INPUT;
+            repeats = (unsigned)parsed;
+            benchmark = 1;
+        } else if (strcmp(key, "--csv") == 0) { csv_path = value; benchmark = 1; }
+        else if (strcmp(key, "--member") == 0) member = value;
         else return EXIT_BAD_INPUT;
     }
-    if (path == NULL || short_window > long_window) return EXIT_BAD_INPUT;
+    if (path == NULL || short_window > long_window || (benchmark && csv_path == NULL)) return EXIT_BAD_INPUT;
     printf("Tick-to-Trade engine %s\nfile=%s short=%d long=%d\n", config->version, path, short_window, long_window);
     RunResult result;
-    if (!engine_execute(path, short_window, long_window, config, &result)) return EXIT_IO_ERROR;
+    if (benchmark) {
+        uint64_t *totals = (uint64_t *)malloc((size_t)repeats * sizeof *totals);
+        uint64_t *processes = (uint64_t *)malloc((size_t)repeats * sizeof *processes);
+        RunResult warmup;
+        if (totals == NULL || processes == NULL) { free(totals); free(processes); return EXIT_IO_ERROR; }
+        if (!engine_execute(path, short_window, long_window, config, &warmup)) { free(totals); free(processes); return EXIT_IO_ERROR; }
+        uint64_t best = UINT64_MAX, worst = 0;
+        for (unsigned i = 0; i < repeats; ++i) {
+            if (!engine_execute(path, short_window, long_window, config, &result)) {
+                free(totals); free(processes); return EXIT_IO_ERROR;
+            }
+            totals[i] = result.total_ns;
+            processes[i] = result.process_ns;
+            if (result.total_ns < best) best = result.total_ns;
+            if (result.total_ns > worst) worst = result.total_ns;
+        }
+        engine_sort_times(totals, repeats);
+        engine_sort_times(processes, repeats);
+        result.total_ns = totals[repeats / 2U];
+        result.process_ns = processes[repeats / 2U];
+        free(totals); free(processes);
+        if (!engine_write_bench_csv(csv_path, member, &result, repeats, best, worst)) return EXIT_IO_ERROR;
+        printf("benchmark warmup=discarded repeats=%u best_ns=%llu median_ns=%llu worst_ns=%llu\n",
+               repeats, (unsigned long long)best, (unsigned long long)result.total_ns,
+               (unsigned long long)worst);
+    } else if (!engine_execute(path, short_window, long_window, config, &result)) {
+        return EXIT_IO_ERROR;
+    }
     if (!result_print(stdout, &result)) return EXIT_IO_ERROR;
     puts("PASS");
     return EXIT_OK;

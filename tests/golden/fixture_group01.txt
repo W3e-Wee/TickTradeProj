@@ -1,0 +1,6 @@
+trades=60
+bars=2
+buys=3
+sells=2
+signal_hash=5243df572643a59d
+vwap=73027.031965233386

@@ -4,8 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Report platform services and optionally verify Pi hardware availability. */
 int main(int argc, char **argv)
 {
+    if (argc == 2 && strcmp(argv[1], "--require-pi") == 0) {
+        if (!plat_is_raspberry_pi()) {
+            puts("SKIPPED: Raspberry Pi hardware not detected");
+            return 77;
+        }
+        puts("PASS Raspberry Pi detected");
+        return 0;
+    }
     if (argc == 3 && strcmp(argv[1], "--pin") == 0) {
         char *end = NULL;
         long core = strtol(argv[2], &end, 10);
