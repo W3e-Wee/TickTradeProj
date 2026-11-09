@@ -28,7 +28,6 @@ From the repository root, run:
 ```sh
 make
 make test
-make verify-golden
 make run-stageA
 ```
 
@@ -81,7 +80,7 @@ docs/                     Design, runbook, stage and evidence documentation
 
 ## Add a ladder version
 
-Add a front end under `src/ladder/`, connect it to the shared engine contract, add its source and compile flags to the Makefile, include it in `test-consistency`, benchmark rows and file/output documentation, then run `make test` and `make strict`. Keep crossover decisions on exact scaled-integer comparisons.
+Add a front end under `src/ladder/`, connect it to the shared engine contract, add its source and compile flags to the Makefile, include it in `test-consistency`, benchmark rows and file/output documentation, then run `make test`. Keep crossover decisions on exact scaled-integer comparisons.
 
 ## Troubleshooting
 
@@ -95,4 +94,4 @@ Before submission, complete the group’s AI-assistance disclosure under course 
 
 ## Manual quality gate
 
-Before sharing, each member runs `make clean`, `make`, `make test` and `make verify-golden` on their own machine, then runs `make strict` on each available operating system. The `results/` subfolders exist so a fresh clone can write output, and Make recreates any required folder if it was removed.
+Before sharing, each member runs `make clean && make && make test` on their own machine. To confirm the same results on another machine, run `make test-test20` and `make test-consistency` on each machine and compare the `trades`, `bars`, `buys`, `sells` and `signal_hash` fields of the printed `RESULT` lines; only timings may differ. The `results/` subfolders exist so a fresh clone can write output, and Make recreates any required folder if it was removed.

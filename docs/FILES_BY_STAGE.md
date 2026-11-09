@@ -22,7 +22,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Shared modules | `src/common/cli.c`, `src/common/cli.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/result.c`, `src/common/result.h`, `src/common/platform.c`, `src/common/platform.h` | CLI, exact crossover, result output, timing and memory services. |
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Supplied stream reader and clock. |
 | Scripts | `scripts/plot_signals.gp` | Signal chart template. |
-| Tests and fixtures | `tests/test_trade.c`, `tests/test_result.c`, `tests/test_fixed_point.c`, `tests/fixtures/trades.csv`, `tests/golden/test20_group01.txt` | Input, result and exact decision checks. |
+| Tests and fixtures | `tests/test_trade.c`, `tests/test_result.c`, `tests/test_fixed_point.c`, `tests/fixtures/trades.csv`, `data/test20_expected.txt` | Input, result and course-oracle checks. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Window selection and platform flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv` | Course oracle and development input. |
 
@@ -47,9 +47,9 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Shared modules | `src/common/bench.c`, `src/common/bench.h`, `src/common/cli.c`, `src/common/cli.h`, `src/common/compat.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/indicators.c`, `src/common/indicators.h`, `src/common/memusage.c`, `src/common/memusage.h`, `src/common/platform.c`, `src/common/platform.h`, `src/common/result.c`, `src/common/result.h`, `src/common/signal_rule.c`, `src/common/signal_rule.h`, `src/common/trade.h` | Engine input, arithmetic, indicators, timing, memory and output contracts. |
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Baseline parser and clock. |
 | Scripts | `scripts/plot_ladder.gp` | Ladder median-time chart. |
-| Tests and fixtures | `tests/test_consistency.c`, `tests/test_bench.c`, `tests/test_fixed_point.c`, `tests/test_indicators.c`, `tests/test_memusage.c`, `tests/test_result.c`, `tests/test_trade.c`, `tests/check.h`, `tests/fixtures/trades.csv`, `tests/golden/test20_group01.txt`, `tests/golden/dev_1M_group01.txt` | Rung equality, arithmetic, indicator and result checks. |
+| Tests and fixtures | `tests/test_consistency.c`, `tests/test_bench.c`, `tests/test_fixed_point.c`, `tests/test_indicators.c`, `tests/test_memusage.c`, `tests/test_result.c`, `tests/test_trade.c`, `tests/check.h`, `tests/fixtures/trades.csv` | Rung equality, arithmetic, indicator and result checks. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Windows by group and architecture flags. |
-| Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv`, `data/stress_full.csv` | Golden, development and final comparison inputs. |
+| Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv`, `data/stress_full.csv` | Course oracle, development and final comparison inputs. |
 
 ## Stage C
 
@@ -102,8 +102,8 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Category | Paths | Role |
 | --- | --- | --- |
 | Sources | `src/stretch/soa/v9_soa.c`, `src/stretch/soa/v9_soa.h`, `src/stageA_plus/fast_parser.c`, `src/common/fixed_point.c`, `src/common/result.c`, `src/common/platform.c` | SoA reader, exact crossover and shared result output. |
-| Tests | `tests/test_consistency.c`, `tests/fixtures/trades.csv`, `tests/golden/test20_group01.txt` | v9 is checked against v0 by the consistency harness. |
-| Data | `data/test20.csv`, `data/dev_1M.csv`, `data/stress_full.csv` | Golden and full consistency inputs. |
+| Tests | `tests/test_consistency.c`, `tests/fixtures/trades.csv` | v9 is checked against v0 by the consistency harness. |
+| Data | `data/test20.csv`, `data/dev_1M.csv`, `data/stress_full.csv` | Course-oracle and full consistency inputs. |
 
 ### Percentile latency
 
@@ -126,7 +126,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Category | Paths | Role |
 | --- | --- | --- |
 | Test programs | `tests/check.h`, `tests/test_bench.c`, `tests/test_cli.c`, `tests/test_compat.c`, `tests/test_consistency.c`, `tests/test_exit_codes.c`, `tests/test_fixed_point.c`, `tests/test_indicators.c`, `tests/test_latency.c`, `tests/test_memusage.c`, `tests/test_parser.c`, `tests/test_platform.c`, `tests/test_replay.c`, `tests/test_replay_events.c`, `tests/test_replay_output.c`, `tests/test_result.c`, `tests/test_rival.c`, `tests/test_signal_display.c`, `tests/test_stage0_math.c`, `tests/test_trade.c` | Unit and integration test sources. |
-| Fixtures and goldens | `tests/fixtures/replay.csv`, `tests/fixtures/trades.csv`, `tests/golden/fixture_group01.txt`, `tests/golden/test20_group01.txt`, `tests/golden/dev_1M_group01.txt` | Bounded input and C-generated deterministic references. |
+| Fixtures | `tests/fixtures/replay.csv`, `tests/fixtures/trades.csv` | Bounded replay and market input. |
 | Shared test modules | Common modules are enumerated under Stage B and Stage C above. | Each test links the modules listed in its Makefile recipe. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Test windows and platform build flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv`, `data/stress_full.csv` | Course oracle and cross-version input. |
@@ -145,8 +145,8 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Tree | Files indexed | Check |
 | --- | --- | --- |
 | `src/` | 62 files, all listed in the stage and shared-module tables above. | 62 indexed; 0 missing in the filesystem inventory. |
-| `tests/` | 25 test, fixture and golden files, including `tests/golden/fixture_group01.txt`. | 25 indexed; 0 missing in the filesystem inventory. |
+| `tests/` | 22 test and fixture files. | 22 indexed; 0 missing in the filesystem inventory. |
 | `scripts/` | `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp`. | 3 indexed; 0 missing in the filesystem inventory. |
 | `config/` | `config/groups.mk`, `config/platform_flags.mk`. | 2 indexed; 0 missing in the filesystem inventory. |
 
-**Inventory check:** `rg --files src tests scripts config` returned 92 paths: 62 under `src/`, 25 under `tests/`, 3 under `scripts/`, and 2 under `config/`. Each is represented in the stage-category tables above. Rerun this command after adding or removing files.
+**Inventory check:** `rg --files src tests scripts config` returned 89 paths: 62 under `src/`, 22 under `tests/`, 3 under `scripts/`, and 2 under `config/`. Each is represented in the stage-category tables above. Rerun this command after adding or removing files.

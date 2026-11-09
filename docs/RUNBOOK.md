@@ -8,17 +8,15 @@ This runbook lists commands from the repository root. GNU Make is required; on W
 make clean
 make
 make test
-make verify-golden
 ```
 
-The project builds its C programs without Python. `make stretch-python` is the only Python-dependent target. Course datasets belong in `data/` and are not part of the repository; fixture-backed parser, consistency, and golden checks remain available without them.
+The project builds its C programs without Python. `make stretch-python` is the only Python-dependent target. Course datasets belong in `data/` and are not part of the repository; fixture-backed parser and consistency checks remain available without them.
 
 ## Stage 0 and Stage A
 
 ```sh
 make stage0-check
 make run-stage0 REPEAT=5
-make verify-golden
 make run-stageA
 make plot-signals
 ```
@@ -80,4 +78,4 @@ make FILE=tests/fixtures/replay.csv replay-1000x
 
 Use [Make commands](MAKE_COMMANDS.md) for target and variable details, [Results locations](RESULTS_LOCATIONS.md) for generated files and CSV headers, and [Stage guide](STAGE_GUIDE.md) for the stage index. Members record their own measurements and predictions in [the logbook](logbook.md); do not copy measurements into design notes by hand.
 
-Before handoff, run `make clean`, `make`, `make test`, `make verify-golden`, and `make strict` on the development machine. Record other operating systems and Raspberry Pi as unverified unless those builds and commands were actually run there.
+Before handoff, run `make clean && make && make test` on the development machine. To confirm the same results on another machine, run `make test-test20` and `make test-consistency` on each machine and compare the `trades`, `bars`, `buys`, `sells` and `signal_hash` fields of the printed `RESULT` lines; only timings may differ. Record other operating systems and Raspberry Pi as unverified unless those builds and commands were actually run there.

@@ -51,7 +51,6 @@ make run-stage0 REPEAT=5
 
 ```sh
 make stageA
-make verify-golden
 make run-stageA
 make plot-signals
 ```
@@ -161,18 +160,19 @@ make PYFILE=data/test20.csv PYREPEAT=3 stretch-python
 
 ## Tests and verification
 
-**Goal:** run unit/integration suites, course and generated goldens, parser comparisons and replay checks. Course-data consistency checks use the fixture when the data files are absent.
+**Goal:** run unit/integration suites, check the course expected output, compare parser implementations, and validate replay. Course-data consistency checks use the fixture when the data files are absent.
 
 ```sh
 make test-unit
 make test-test20
 make test-consistency
+make parser-compare-test
+make parser-dev-test
 make test-replay
-make verify-golden
-make strict
+make test
 ```
 
-`make update-golden` regenerates deterministic references from v0 and is an explicit update operation; review its files before committing.
+Before sharing across machines, run `make test-test20` and `make test-consistency` on each machine and compare the `trades`, `bars`, `buys`, `sells` and `signal_hash` fields of the printed `RESULT` lines; only timings may differ.
 
 ## General and housekeeping
 
@@ -228,12 +228,9 @@ Each `.PHONY` target has one primary group below and appears in `make help`.
 | `test-test20` | Tests and verification | Tests and verification |
 | `test-consistency` | Tests and verification | Tests and verification |
 | `test-replay` | Tests and verification | Tests and verification |
-| `verify-golden` | Tests and verification | Tests and verification |
-| `update-golden` | Tests and verification | Tests and verification |
 | `all` | General/housekeeping | General and housekeeping |
 | `help` | General/housekeeping | General and housekeeping |
 | `tools` | General/housekeeping | General and housekeeping |
 | `plots` | General/housekeeping | General and housekeeping |
-| `strict` | General/housekeeping | General and housekeeping |
 | `clean` | General/housekeeping | General and housekeeping |
 | `distclean` | General/housekeeping | General and housekeeping |

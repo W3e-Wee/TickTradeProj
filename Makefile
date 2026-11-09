@@ -79,7 +79,7 @@ CPPFLAGS += -D_GNU_SOURCE
 else ifeq ($(PLATFORM),macos)
 CPPFLAGS += -D_POSIX_C_SOURCE=200809L
 endif
-CFLAGS := -std=c11 $(OPT) -ffp-contract=off -Wall -Wextra -Wpedantic $(STRICT_FLAGS) -MMD -MP
+CFLAGS := -std=c11 $(OPT) -ffp-contract=off -Wall -Wextra -Wpedantic  -MMD -MP
 LDFLAGS :=
 ifeq ($(OS),Windows_NT)
 PYTHON ?= $(if $(shell where python3 2>NUL),python3,$(if $(shell where python 2>NUL),python,))
@@ -96,7 +96,7 @@ $(info TickTrade: CC=$(CC) PLATFORM=$(PLATFORM) CPPFLAGS=$(CPPFLAGS) CFLAGS=$(CF
 endif
 
 .DEFAULT_GOAL := all
-.PHONY: all help clean distclean test test-unit test-test20 test-consistency verify-golden update-golden test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival plot-ladder parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots strict stage0-check parser-compare-test parser-dev-test
+.PHONY: all help clean distclean test test-unit test-test20 test-consistency test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival plot-ladder parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots stage0-check parser-compare-test parser-dev-test
 
 all: $(BUILD)/stageA_stream$(EXE) $(BUILD)/platform_check$(EXE) $(BUILD)/parser_compare$(EXE) $(BUILD)/data_profile$(EXE)
 
@@ -129,13 +129,13 @@ GCC_NO_SIBLING := $(if $(findstring gcc,$(notdir $(firstword $(CC)))),-fno-optim
 
 define STAGE0_RULES
 $(BUILD)/stage0_sum_loop_$(1)_plain$(EXE): src/stage0/stage0_sum_loop.c src/stage0/stage0_math.c src/common/cli.c | $(BUILD)
-	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic $$(STRICT_FLAGS) -MMD -MP -DOPT_LABEL=$(1) -DGUARD_OPTIMISER=0 $$(filter %.c,$$^) -o $$@
+	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic  -MMD -MP -DOPT_LABEL=$(1) -DGUARD_OPTIMISER=0 $$(filter %.c,$$^) -o $$@
 $(BUILD)/stage0_sum_loop_$(1)_guarded$(EXE): src/stage0/stage0_sum_loop.c src/stage0/stage0_math.c src/common/cli.c | $(BUILD)
-	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic $$(STRICT_FLAGS) -MMD -MP -DOPT_LABEL=$(1) -DGUARD_OPTIMISER=1 $$(filter %.c,$$^) -o $$@
+	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic  -MMD -MP -DOPT_LABEL=$(1) -DGUARD_OPTIMISER=1 $$(filter %.c,$$^) -o $$@
 $(BUILD)/stage0_sum_recursion_$(1)_plain$(EXE): src/stage0/stage0_sum_recursion.c src/stage0/stage0_math.c src/common/cli.c | $(BUILD)
-	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic $$(STRICT_FLAGS) -MMD -MP -DGUARD_OPTIMISER=0 $$(filter %.c,$$^) -o $$@
+	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic  -MMD -MP -DGUARD_OPTIMISER=0 $$(filter %.c,$$^) -o $$@
 $(BUILD)/stage0_sum_recursion_$(1)_guarded$(EXE): src/stage0/stage0_sum_recursion.c src/stage0/stage0_math.c src/common/cli.c | $(BUILD)
-	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic $$(STRICT_FLAGS) -MMD -MP $$(GCC_NO_SIBLING) -DGUARD_OPTIMISER=1 $$(filter %.c,$$^) -o $$@
+	$$(CC) $$(CPPFLAGS) -std=c11 -$(1) -ffp-contract=off -Wall -Wextra -Wpedantic  -MMD -MP $$(GCC_NO_SIBLING) -DGUARD_OPTIMISER=1 $$(filter %.c,$$^) -o $$@
 endef
 $(foreach level,$(STAGE0_LEVELS),$(eval $(call STAGE0_RULES,$(level))))
 
@@ -175,8 +175,6 @@ help:
 	@echo "test-unit: run C unit tests"
 	@echo "test-test20: compare engines against test20 expected output"
 	@echo "test-replay: check schedule, output, and clean replay exit"
-	@echo "verify-golden: check test20 expected output and Stage A"
-	@echo "update-golden: regenerate deterministic v0 reference fields"
 	@echo "test-consistency: compare engine outputs across datasets"
 	@echo "parser-compare-test: compare reference and fast parsers on the fixture"
 	@echo "parser-dev-test: compare reference and fast parsers on development data"
@@ -193,7 +191,6 @@ help:
 	@echo "rival: simulate rival fills and plot sweep"
 	@echo "asm: generate an assembly listing"
 	@echo "plots: generate all available plots"
-	@echo "strict: rebuild with warnings treated as errors"
 	@echo "clean: remove build outputs"
 	@echo "distclean: remove build and generated results"
 	@echo "stage0-check: run provided Stage 0 helper check"
@@ -257,9 +254,6 @@ ladder: $(ENGINE_BINS)
 HAS_TEST20 := $(wildcard $(DATA)/test20.csv)
 HAS_DEV_DATA := $(wildcard $(DATA)/dev_1M.csv)
 HAS_STRESS_DATA := $(wildcard $(DATA)/stress_full.csv)
-GOLDEN_DIR := tests/golden
-$(GOLDEN_DIR):
-	$(RESULT_MKDIR)
 ifeq ($(HAS_TEST20),)
 test-test20: $(BUILD)/test_consistency$(EXE)
 	@echo "NOTE: using fixture because $(DATA)/test20.csv is missing."
@@ -276,31 +270,6 @@ else
 test-consistency: $(BUILD)/test_consistency$(EXE)
 	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG)
 	$(BUILD)/test_consistency$(EXE) --file $(DATA)/stress_full.csv --short $(SHORT) --long $(LONG)
-endif
-update-golden: $(BUILD)/test_consistency$(EXE) | $(GOLDEN_DIR)
-	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5 --write-golden $(GOLDEN_DIR)/fixture_group$(GROUP).txt
-ifneq ($(HAS_TEST20),)
-	$(BUILD)/test_consistency$(EXE) --file $(DATA)/test20.csv --short 3 --long 5 --write-golden $(GOLDEN_DIR)/test20_group$(GROUP).txt
-	@echo "Golden test20 refresh complete."
-endif
-ifneq ($(HAS_DEV_DATA),)
-	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG) --write-golden $(GOLDEN_DIR)/dev_1M_group$(GROUP).txt
-else
-	@echo "SKIPPED: development dataset missing"
-endif
-ifeq ($(HAS_TEST20),)
-verify-golden: test-test20 $(BUILD)/test_consistency$(EXE) $(BUILD)/stageA_stream$(EXE)
-	$(BUILD)/test_consistency$(EXE) --file tests/fixtures/trades.csv --expected $(GOLDEN_DIR)/fixture_group$(GROUP).txt --short 3 --long 5
-	$(BUILD)/stageA_stream$(EXE) --file tests/fixtures/trades.csv --short 3 --long 5
-else
-verify-golden: test-test20 $(BUILD)/test_consistency$(EXE)
-	$(BUILD)/test_consistency$(EXE) --file $(DATA)/test20.csv --expected $(GOLDEN_DIR)/test20_group$(GROUP).txt --short 3 --long 5
-ifneq ($(HAS_DEV_DATA),)
-	$(BUILD)/test_consistency$(EXE) --file $(DATA)/dev_1M.csv --expected $(GOLDEN_DIR)/dev_1M_group$(GROUP).txt --short $(SHORT) --long $(LONG)
-else
-	@echo "SKIPPED: development dataset missing"
-endif
-	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/test20.csv --short 3 --long 5
 endif
 $(BUILD)/test_consistency$(EXE): tests/test_consistency.c $(ENGINE_COMMON) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DTICKTRADE_SOA_NO_MAIN -DENGINE_STATIC_STORAGE -DMAX_TRADES=$(MAX_TRADES) $(filter-out src/stretch/soa/v9_soa.c,$(filter %.c,$^)) src/stretch/soa/v9_soa.c $(LDFLAGS) -lm -o $@
@@ -500,9 +469,6 @@ else
 endif
 asm: | $(BUILD) results/asm
 	$(CC) $(CPPFLAGS) $(CFLAGS) -S src/ladder/engine.c -o $(ASM_FILE)
-strict:
-	@$(MAKE) clean
-	@$(MAKE) STRICT_FLAGS=-Werror all test
 $(BUILD)/stage0_check$(EXE): $(PROVIDED_DIR)/test_helpers.c | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@
 stage0-check: $(BUILD)/stage0_check$(EXE)

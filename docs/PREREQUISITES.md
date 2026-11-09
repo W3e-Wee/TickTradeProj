@@ -104,8 +104,8 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 
 | External command or service | Make targets | Missing-prerequisite output |
 | --- | --- | --- |
-| GCC or Clang (`CC`) | `all`, stage builds, tests, benchmarks, replay, plots, `asm`, `strict` | Build error; the compiler is required. |
-| GNU Make (`make`, `gmake`, `mingw32-make`) | Every target; recursive in `strict` and `bench-pi` | Command unavailable; required. |
+| GCC or Clang (`CC`) | `all`, stage builds, tests, benchmarks, replay, plots, `asm` | Build error; the compiler is required. |
+| GNU Make (`make`, `gmake`, `mingw32-make`) | Every target; recursive in `bench-pi` | Command unavailable; required. |
 | `gnuplot` | `plot-signals`, `plot-rival`, `plot-ladder`, `plots`, the chart step of `bench` | `SKIPPED: gnuplot not found` |
 | Python interpreter | `stretch-python` | `SKIPPED: python not found` |
 | NumPy | NumPy row in `stretch-python` | `SKIPPED: numpy not installed` |

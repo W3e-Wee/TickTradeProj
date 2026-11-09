@@ -23,9 +23,6 @@ Output paths and headers below are taken from the Makefile and source. Generated
 | `results/asm/<version>_<architecture>.s` | `asm` | Compiler assembly listing | GENERATED HERE |
 | `build/<platform>/python_c_reference.txt` | `stretch-python` | C `RESULT` record used for comparison | GENERATED HERE |
 | `build/<platform>/*.exe` or `build/<platform>/*` | `all`, stage/ladder/replay/stretch/test builds | Compiler outputs: programs, test runners, object and dependency files | GENERATED HERE (Windows build) |
-| `tests/golden/fixture_group01.txt` | `update-golden` | Deterministic v0 fields: trades, bars, buys, sells, signal hash, VWAP | GENERATED HERE |
-| `tests/golden/test20_group01.txt` | `update-golden` | Same deterministic key/value fields from test20 | GENERATED HERE |
-| `tests/golden/dev_1M_group01.txt` | `update-golden` | Same deterministic key/value fields from the development input | GENERATED HERE |
 | `results/bench/ladder_<platform>_<member>.csv` (v9_soa row) | Struct-of-Arrays stretch rung | Same ladder CSV header above | GENERATED HERE |
 | `results/replay/<platform>_<member>_<core>_<speed>x.csv` | Percentile-latency stretch | Replay schema above, including `p50_latency_ns` and `p99_latency_ns` | GENERATED HERE |
 | `results/bench/c_vs_python.csv` | C-versus-Python stretch | Python comparison header above | GENERATED HERE (pure Python passed; NumPy unavailable) |

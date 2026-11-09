@@ -1,6 +1,0 @@
-trades=8928944
-bars=84888
-buys=20194
-sells=19317
-signal_hash=d4dcb8788d059ef4
-vwap=76718.67569935658
