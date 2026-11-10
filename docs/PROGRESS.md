@@ -1,5 +1,18 @@
 # Project progress
 
+## Signal plot repair
+
+- Audited the existing Stage A export and gnuplot recipe before editing. The old chart had no signal markers, used the default terminal size, and did not capture or validate gnuplot diagnostics.
+- Added the interpolated SMA crossing export, exact-signal self-check, first qualifying complete-slice selection, and a shorter-file path for fixtures. Added C checks for fixture/development export geometry and PNG/summary validation.
+- Rewrote the fixed-path gnuplot script with terminal fallback, labeled axes, data-derived y-range, distinct SMA styling, crossing markers, and the five-line summary. `plot-signals` now captures stderr and runs the plot validator.
+- Linux x86_64 checks run: clean build, full test suite, Stage A fixture and development export checks, gnuplot rendering, PNG dimensions/signature/size, summary counts and range, and visual inspection. All requested plot checks pass; Windows, macOS and Raspberry Pi runs remain unverified.
+
+## Plot portability extension
+
+- Initial audit found the rival plot failing on the headered CSV, the ladder chart sending binary PNG data to the terminal, gnuplot `-e` path arguments, no shared style or plot registry, and text-mode ladder CSV output.
+- Added `scripts/common.gp`, registry-driven fixed-path scripts, `plot-money-lost`, runtime Make input/tool checks, captured gnuplot logs, C validators and script-policy checks. Ladder plotting normalizes the existing platform/member CSV into an LF-only fixed input using the latest row per rung; the original benchmark CSV schema and path remain unchanged.
+- Plot checker and script scanner pass. `make clean && make && make test` passes on Linux x86_64, and `make plots` generates and validates all three PNGs. All plotted data files have LF line endings; gnuplot logs are empty. The no-gnuplot path skips rendering and passes data validation. macOS, Windows and Raspberry Pi remain unverified for this extension.
+
 ## Current removal and regression session
 
 - Date: 2026-11-09; host: Windows 64-bit with MSYS2 UCRT64, GCC and GNU Make.

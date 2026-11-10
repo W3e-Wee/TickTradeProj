@@ -24,18 +24,51 @@
 /* Write the selected plot slice after computation so disk I/O is untimed. */
 static int write_slice(const char *path, const double *price, const double *short_sma,
                        const double *long_sma, const int *signal, const uint64_t *index,
+                       const double *prev_short, const double *prev_long,
                        size_t length, size_t first)
 {
     if (path == NULL || length == 0) return 1;
+    char points_path[1024];
+    const char *suffix = strrchr(path, '.');
+    size_t base_len = suffix != NULL ? (size_t)(suffix - path) : strlen(path);
+    if (base_len + sizeof("_points.dat") > sizeof points_path) return 0;
+    memcpy(points_path, path, base_len);
+    memcpy(points_path + base_len, "_points.dat", sizeof("_points.dat"));
+    /* Keep the public companion name signal_points.dat for signals.dat exports. */
+    char *tail = strstr(points_path, "signals_points.dat");
+    if (tail != NULL) memmove(tail, "signal_points.dat", sizeof("signal_points.dat"));
+    for (size_t row = 0; row < length; ++row) {
+        size_t at = (first + row) % length;
+        double before = prev_short[at] - prev_long[at];
+        double now = short_sma[at] - long_sma[at];
+        if ((signal[at] == 1 && !(before <= 0.0 && now > 0.0)) ||
+            (signal[at] == -1 && !(before >= 0.0 && now < 0.0)) ||
+            (signal[at] == 0 && ((before < 0.0 && now > 0.0) || (before > 0.0 && now < 0.0)))) {
+            fprintf(stderr, "plot-data check: FAIL inconsistent crossover at trade %llu signal=%d d_prev=%.12g d_now=%.12g\n", (unsigned long long)index[at], signal[at], before, now);
+            return -1;
+        }
+    }
+    puts("plot-data check: PASS");
     FILE *output = fopen(path, "wb");
     if (output == NULL) return 0;
+    FILE *points = fopen(points_path, "wb");
+    if (points == NULL) { fclose(output); return 0; }
     int ok = 1;
     for (size_t row = 0; row < length; ++row) {
         size_t at = (first + row) % length;
         if (fprintf(output, "%d %.2f %.4f %.4f %d\n", (int)index[at], price[at],
                     short_sma[at], long_sma[at], signal[at]) < 0) { ok = 0; break; }
+        if (signal[at] != 0) {
+            double d0 = prev_short[at] - prev_long[at];
+            double d1 = short_sma[at] - long_sma[at];
+            double f = d0 / (d0 - d1);
+            double x = ((double)index[at] - 1.0) + f;
+            double y = prev_short[at] + f * (short_sma[at] - prev_short[at]);
+            if (fprintf(points, "%.4f %.4f %d\n", x, y, signal[at]) < 0) { ok = 0; break; }
+        }
     }
     if (fclose(output) != 0) ok = 0;
+    if (fclose(points) != 0) ok = 0;
     return ok;
 }
 
@@ -50,10 +83,12 @@ int main(int argc, char **argv)
     double *prices = NULL;
     int64_t *short_fixed = NULL, *long_fixed = NULL;
     double *slice_price = NULL, *slice_short = NULL, *slice_long = NULL;
+    double *slice_prev_short = NULL, *slice_prev_long = NULL;
     uint64_t *slice_index = NULL;
     int *slice_signal = NULL;
     double vwap_num = 0.0, vwap_den = 0.0;
     int previous_fixed_sign = 0, fixed_ready = 0, bar_active = 0;
+    double previous_short_value = 0.0, previous_long_value = 0.0;
     int64_t short_sum = 0, long_sum = 0;
     long long current_second = 0;
     uint64_t trades = 0, bars = 0, buys = 0, sells = 0;
@@ -108,11 +143,13 @@ int main(int argc, char **argv)
         slice_long = (double *)malloc(slice_len * sizeof *slice_long);
         slice_signal = (int *)malloc(slice_len * sizeof *slice_signal);
         slice_index = (uint64_t *)malloc(slice_len * sizeof *slice_index);
+        slice_prev_short = (double *)malloc(slice_len * sizeof *slice_prev_short);
+        slice_prev_long = (double *)malloc(slice_len * sizeof *slice_prev_long);
         if (slice_price == NULL || slice_short == NULL || slice_long == NULL ||
-            slice_signal == NULL || slice_index == NULL) {
+            slice_signal == NULL || slice_index == NULL || slice_prev_short == NULL || slice_prev_long == NULL) {
             fprintf(stderr, "Unable to allocate signal slice.\n");
             close_trades(); free(prices); free(short_fixed); free(long_fixed); free(slice_price); free(slice_short); free(slice_long);
-            free(slice_signal); free(slice_index); return EXIT_OUT_OF_RANGE;
+            free(slice_signal); free(slice_index); free(slice_prev_short); free(slice_prev_long); return EXIT_OUT_OF_RANGE;
         }
     }
     printf("Stage A stream\nfile=%s short=%d long=%d\n", path, short_window, long_window);
@@ -146,6 +183,8 @@ int main(int argc, char **argv)
             long_value /= (double)long_window;
             int sign = fp_compare_products((uint64_t)short_sum, (uint64_t)long_window,
                                            (uint64_t)long_sum, (uint64_t)short_window);
+            /* Preserve exact equality in display doubles when integer windows tie. */
+            if (sign == 0) long_value = short_value;
             if (fixed_ready && previous_fixed_sign <= 0 && sign > 0) signal = 1;
             else if (fixed_ready && previous_fixed_sign >= 0 && sign < 0) signal = -1;
             previous_fixed_sign = sign; fixed_ready = 1;
@@ -159,11 +198,13 @@ int main(int argc, char **argv)
                 } else { ++slice_rows; }
                 slice_price[at] = price; slice_short[at] = short_value; slice_long[at] = long_value;
                 slice_signal[at] = signal; slice_index[at] = trades + 1U;
+                slice_prev_short[at] = previous_short_value; slice_prev_long[at] = previous_long_value;
                 if (signal > 0) ++slice_buys;
                 if (signal < 0) ++slice_sells;
                 slice_next = (slice_next + 1U) % slice_len;
                 if (slice_rows == slice_len && slice_buys > 0 && slice_sells > 0) slice_selected = 1;
             }
+            previous_short_value = short_value; previous_long_value = long_value;
         }
         long long second = trade_time() / 1000000LL;
         if (!bar_active) { current_second = second; open = high = low = close = price; bar_active = 1; }
@@ -175,15 +216,29 @@ int main(int argc, char **argv)
     if (bar_active) ++bars;
     (void)open; (void)high; (void)low; (void)close;
     close_trades();
-    if (export_path != NULL && slice_selected &&
-        !write_slice(export_path, slice_price, slice_short, slice_long, slice_signal,
-                     slice_index, slice_len, slice_next)) {
+    if (export_path != NULL && !slice_selected && slice_rows < slice_len && slice_buys > 0 && slice_sells > 0)
+        slice_selected = 1;
+    if (export_path != NULL && !slice_selected) {
+        fprintf(stderr, "No %zu-trade slice after SMA warm-up contains both BUY and SELL signals.\n", slice_len);
+        free(prices); free(short_fixed); free(long_fixed); free(slice_price); free(slice_short); free(slice_long);
+        free(slice_signal); free(slice_index); free(slice_prev_short); free(slice_prev_long); return EXIT_OUT_OF_RANGE;
+    }
+    if (export_path != NULL && slice_selected) {
+        int write_status = write_slice(export_path, slice_price, slice_short, slice_long, slice_signal,
+                                       slice_index, slice_prev_short, slice_prev_long, slice_selected && slice_rows < slice_len ? slice_rows : slice_len, slice_selected && slice_rows < slice_len ? 0 : slice_next);
+        if (write_status < 0) {
+            free(prices); free(short_fixed); free(long_fixed); free(slice_price); free(slice_short); free(slice_long);
+            free(slice_signal); free(slice_index); free(slice_prev_short); free(slice_prev_long); return EXIT_SELF_CHECK_FAIL;
+        }
+        if (write_status == 0) {
         fprintf(stderr, "Signal export write failed.\n");
         free(prices); free(short_fixed); free(long_fixed); free(slice_price); free(slice_short); free(slice_long);
-        free(slice_signal); free(slice_index); return EXIT_IO_ERROR;
+        free(slice_signal); free(slice_index); free(slice_prev_short); free(slice_prev_long); return EXIT_IO_ERROR;
+        }
     }
     free(prices); free(short_fixed); free(long_fixed);
     free(slice_price); free(slice_short); free(slice_long); free(slice_signal); free(slice_index);
+    free(slice_prev_short); free(slice_prev_long);
     printf("RESULT version=stageA file=%s trades=%llu short=%d long=%d vwap=%.6f bars=%llu buys=%llu sells=%llu signal_hash=%016llx load_ns=0 process_ns=%llu total_ns=%llu peak_mem_kb=%llu\n",
            path, (unsigned long long)trades, short_window, long_window,
            vwap_den == 0.0 ? 0.0 : vwap_num / vwap_den, (unsigned long long)bars,

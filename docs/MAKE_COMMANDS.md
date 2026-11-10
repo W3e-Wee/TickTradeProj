@@ -1,6 +1,6 @@
 # Make commands
 
-This reference was checked against `.PHONY`, `make help`, Makefile recipes and `make -n` on Windows. Recheck target coverage with `make help` whenever a target or recipe changes. Run all commands from the repository root; use `gmake` on macOS Homebrew unless GNU Make is on `PATH`, and use `mingw32-make` from Windows cmd/PowerShell.
+The 39-target Makefile before the plotting extension was checked against `.PHONY`, `make help`, Makefile recipes and `make -n` on Windows. The current table documents all 41 phony targets. The plotting extension was verified on Linux; its Windows and macOS paths still need host runs. Recheck target coverage with `make help` whenever a target or recipe changes. Run all commands from the repository root; use `gmake` on macOS Homebrew unless GNU Make is on `PATH`, and use `mingw32-make` from Windows cmd/PowerShell.
 
 ## Variables
 
@@ -31,6 +31,7 @@ This reference was checked against `.PHONY`, `make help`, Makefile recipes and `
 | `PROVIDED_DIR` | `provided` | Root location of untouched course helper files. | `make PROVIDED_DIR=provided all` |
 | `V` | `0` | Set to `1` to print resolved compiler and platform settings. | `make V=1 all` |
 | `PLATFORM`, `BUILD`, `EXE` | Auto-detected | Host label, `build/<platform>` directory, and executable suffix. | Override `PLATFORM` only for dry-run audits. |
+| `GNUPLOT` | `gnuplot` | Console gnuplot executable used by plot targets; override for availability checks or custom installations. | `make plots GNUPLOT=gnuplot` |
 
 The Makefile also selects `PYTHON_PATH`, `GNUPLOT_PATH`, `PI_CFLAGS` and `NEON_CFLAGS` from the platform and supplied overrides. Windows adds `-lpsapi -lwinmm`; Linux receives `_GNU_SOURCE`; macOS receives `_POSIX_C_SOURCE=200809L`.
 
@@ -53,6 +54,7 @@ make run-stage0 REPEAT=5
 make stageA
 make run-stageA
 make plot-signals
+make test-plot
 ```
 
 ## Stage A+
@@ -97,10 +99,11 @@ make asm
 
 ## Rival bot demonstration
 
-**Goal:** generate the reaction-time P&L curve, then plot it. **Availability:** all supported platforms for the C sweep; plot output needs gnuplot. Plot skip: `SKIPPED: gnuplot not found`.
+**Goal:** generate the reaction-time P&L curve, then plot it. **Availability:** all supported platforms for the C sweep; `plot-money-lost` reads an existing sweep and does not run its producer. Missing input or gnuplot prints a `SKIPPED:` message and exits successfully.
 
 ```sh
 make rival FILE=data/stress_full.csv
+make plot-money-lost
 make plot-rival
 ```
 
@@ -169,6 +172,8 @@ make test-consistency
 make parser-compare-test
 make parser-dev-test
 make test-replay
+make test-plot
+make test-unit
 make test
 ```
 
@@ -187,7 +192,7 @@ make clean
 make distclean
 ```
 
-`plots` invokes the signal, rival and ladder plot targets; each prints `SKIPPED: gnuplot not found` when the external program is missing. `clean` removes `build/`; `distclean` also removes generated result files while preserving the seven `.gitkeep` placeholders.
+`plots` invokes the signal, money-lost and ladder plot targets; each prints `SKIPPED: gnuplot not found` when the external program is missing. Missing plot inputs also skip with a producer hint. `plot-rival` remains an alias that runs `rival` before the money-lost chart. The scripts share `scripts/common.gp`; `tests/plot_registry.h` records their inputs, dimensions, summary files and checks. `clean` removes `build/`; `distclean` also removes generated result files while preserving the seven `.gitkeep` placeholders.
 
 ## Target coverage table
 
@@ -201,6 +206,8 @@ Each `.PHONY` target has one primary group below and appears in `make help`.
 | `stageA` | Stage A | Stage A |
 | `run-stageA` | Stage A | Stage A |
 | `plot-signals` | Stage A | Stage A |
+| `plot-money-lost` | Rival bot demonstration | Rival bot demonstration |
+| `test-plot` | Tests and verification | Tests and verification |
 | `stageA_plus` | Stage A+ | Stage A+ |
 | `parser_compare` | Stage A+ | Stage A+ |
 | `parser-compare-test` | Stage A+ | Stage A+ |

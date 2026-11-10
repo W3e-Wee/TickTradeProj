@@ -65,6 +65,10 @@ for each valid trade:
 flush the last bar and print one RESULT line
 ```
 
+Signal exports select the first complete post-warm-up slice that contains both signal sides. The exporter checks every exact crossover against the unrounded SMA differences. For each signal it linearly interpolates between the preceding and current SMA values to write one crossing coordinate to `signal_points.dat`; the plot draws BUY/SELL markers only from that file, so they sit on the SMA intersection rather than at the trade price.
+
+All charts load `scripts/common.gp` for gnuplot version/terminal selection, decimal parsing, colour-safe lines, grid and labels. `tests/plot_registry.h` is the plot manifest for scripts, inputs, required columns, row minimums, PNG dimensions and byte thresholds, summaries, logs and series counts. The ladder plot uses a fixed LF-only input copy containing the latest row for each rung so its gnuplot script can keep fixed repository-relative paths. PNG byte thresholds are lower bounds that reject empty or near-empty output while permitting terminal/font differences across systems.
+
 The parser comparison first checks each row's timestamp, price, quantity and side, then measures repeated full-file parses and appends the generated timing row.
 
 ### Stage B

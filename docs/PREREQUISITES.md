@@ -1,12 +1,18 @@
 # Prerequisites
 
-Verification status for this session: **Windows 64-bit with MSYS2 UCRT64**. The compiler, Make, Python and NumPy version checks were run here; gnuplot is absent. Linux, macOS and Raspberry Pi OS instructions are documented but **NOT VERIFIED** on those platforms.
+Verification status for this session: **Linux x86_64**. GCC, GNU Make and gnuplot 6.0 were available; both `pngcairo` and `png` terminals were confirmed. Windows, macOS and Raspberry Pi OS instructions are documented but **NOT VERIFIED** on those platforms.
 
 Stretch-goal mapping: NEON uses `make stretch` and a scalar fallback; Struct-of-Arrays v9 is built and checked by `make stretch` and `make test-consistency`; replay latency p50/p99 is included in Stage C CSV; C-versus-Python is isolated to `make stretch-python` with optional NumPy.
 
 The SoA rung is a C-only addition to the engine ladder. It needs no external package; its prerequisite is the same C11 compiler used for the main build. The percentile-latency output is also part of the C replay binary.
 
 ## Linux (Debian/Ubuntu)
+
+## Plotting
+
+All chart targets require gnuplot 5.0 or newer with `pngcairo` or `png`. `scripts/common.gp` selects `pngcairo` when available and otherwise selects `png`; a `-nox` package is suitable only when its terminal list includes `png`. Use the console `gnuplot` executable on Windows; `wgnuplot` is unsupported. Set `GNUPLOT=<program>` to override the executable. The scripts run from the repository root and do not use shell-specific arguments.
+
+If gnuplot is unavailable, plot targets print `SKIPPED: gnuplot not found`, exit successfully, and still run available data-only checks. If a plot input is unavailable, the target prints `SKIPPED: <file> not found (run make <producer-target> first)` and exits successfully.
 
 **Required**
 
@@ -20,7 +26,7 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 - Install performance counters when the distribution provides the matching package: `sudo apt install linux-perf`.
 - Install VS Code from Microsoft's Linux package repository, or use its published `.deb` installer; verification is `code --version`.
 - Verify: `gnuplot --version`, `git --version`, `taskset --version`, `perf --version` and `code --version`.
-- Needed by: `plot-signals`, `plot-rival`, `plot-ladder`, `plots` (gnuplot); `bench-pi` (taskset and Raspberry Pi hardware); `perf` (perf); VS Code tasks are optional shortcuts.
+- Needed by: `plot-signals`, `plot-money-lost`, `plot-rival`, `plot-ladder`, `plots` (gnuplot); `bench-pi` (taskset and Raspberry Pi hardware); `perf` (perf); VS Code tasks are optional shortcuts. A gnuplot `-nox` build is acceptable only if it lists the `png` terminal.
 
 **Stretch-goal only**
 
@@ -41,10 +47,10 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 
 **Recommended**
 
-- Install plots and Git: `pacman -S mingw-w64-ucrt-x86_64-gnuplot git`.
+- Install plots and Git: `pacman -S mingw-w64-ucrt-x86_64-gnuplot git`; put the console `gnuplot.exe` on `PATH`. `wgnuplot` is unsupported.
 - Install VS Code with `winget install Microsoft.VisualStudioCode`; verify with `code --version`.
 - Verify: `gnuplot --version`, `git --version`, and `code --version`.
-- Needed by: `plot-signals`, `plot-rival`, `plot-ladder`, and `plots` require gnuplot. VS Code is optional for *Terminal > Run Task…*.
+- Needed by: all `plot-<name>` targets and `plots` require gnuplot. VS Code is optional for *Terminal > Run Task…*.
 
 **Stretch-goal only**
 
@@ -67,7 +73,7 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 
 - Install plotting, Git and VS Code: `brew install gnuplot git` and `brew install --cask visual-studio-code`.
 - Verify: `gnuplot --version`, `git --version` and `code --version`.
-- Needed by: gnuplot is used by `plot-signals`, `plot-rival`, `plot-ladder` and `plots`; VS Code tasks are optional.
+- Needed by: gnuplot is used by `plot-signals`, `plot-money-lost`, `plot-rival`, `plot-ladder` and `plots`; VS Code tasks are optional.
 
 **Stretch-goal only**
 
@@ -89,7 +95,7 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 
 - Install plotting, Git, CPU affinity and performance counters: `sudo apt install gnuplot git util-linux linux-perf`.
 - Verify: `gnuplot --version`, `git --version`, `taskset --version`, and `perf --version`.
-- Needed by: plot targets use gnuplot; `bench-pi` uses `taskset` and requires Pi hardware; `perf` uses Linux perf. Use a `performance` CPU governor and record the selected core for controlled measurements.
+- Needed by: plot targets use gnuplot; a gnuplot `-nox` build is acceptable only when it lists `png`; `bench-pi` uses `taskset` and requires Pi hardware; `perf` uses Linux perf. Use a `performance` CPU governor and record the selected core for controlled measurements.
 - Run LED targets with `SUDO=sudo` when the device permissions require elevated access.
 
 **Stretch-goal only**
@@ -106,7 +112,8 @@ The SoA rung is a C-only addition to the engine ladder. It needs no external pac
 | --- | --- | --- |
 | GCC or Clang (`CC`) | `all`, stage builds, tests, benchmarks, replay, plots, `asm` | Build error; the compiler is required. |
 | GNU Make (`make`, `gmake`, `mingw32-make`) | Every target; recursive in `bench-pi` | Command unavailable; required. |
-| `gnuplot` | `plot-signals`, `plot-rival`, `plot-ladder`, `plots`, the chart step of `bench` | `SKIPPED: gnuplot not found` |
+| `gnuplot` | `plot-signals`, `plot-money-lost`, `plot-rival`, `plot-ladder`, `plots`, the chart step of `bench` | `SKIPPED: gnuplot not found` |
+| Plot data file | The matching `plot-<name>` target | `SKIPPED: <file> not found (run make <producer-target> first)` |
 | Python interpreter | `stretch-python` | `SKIPPED: python not found` |
 | NumPy | NumPy row in `stretch-python` | `SKIPPED: numpy not installed` |
 | Course CSV files | Data-dependent targets; test targets fall back to fixtures when absent | `stretch-python`: `SKIPPED: dataset not found: <path>`; `bench-pi`: `SKIPPED: Raspberry Pi hardware not detected` is separate from datasets. |

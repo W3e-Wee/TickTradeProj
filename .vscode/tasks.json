@@ -6,6 +6,8 @@
         { "label": "run-stageA", "type": "shell", "command": "make run-stageA", "problemMatcher": [] },
         { "label": "bench", "type": "shell", "command": "make bench", "problemMatcher": [] },
         { "label": "plot-signals", "type": "shell", "command": "make plot-signals", "problemMatcher": [] },
+        { "label": "plot-money-lost", "type": "shell", "command": "make plot-money-lost", "problemMatcher": [] },
+        { "label": "plots", "type": "shell", "command": "make plots", "problemMatcher": [] },
         { "label": "clean", "type": "shell", "command": "make clean", "problemMatcher": [] }
     ]
 }

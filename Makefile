@@ -22,6 +22,7 @@ PYFILE ?= $(DATA)/stress_full.csv
 PYLIMIT ?=
 PYREPEAT ?= 3
 V ?= 0
+GNUPLOT ?= gnuplot
 include config/groups.mk
 include config/platform_flags.mk
 ifneq ($(GROUP),05)
@@ -93,18 +94,19 @@ ifeq ($(OS),Windows_NT)
 PYTHON ?= $(if $(shell where python3 2>NUL),python3,$(if $(shell where python 2>NUL),python,))
 PYTHON_PATH := $(shell where $(PYTHON) 2>NUL)
 LDFLAGS += -lpsapi -lwinmm
-GNUPLOT_PATH := $(shell where gnuplot 2>NUL)
+GNUPLOT_CHECK_REDIRECT := 2>NUL
 else
 PYTHON ?= $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null)
 PYTHON_PATH := $(shell command -v $(PYTHON) 2>/dev/null)
-GNUPLOT_PATH := $(shell command -v gnuplot 2>/dev/null)
+GNUPLOT_CHECK_REDIRECT := 2>/dev/null
 endif
+GNUPLOT_VERSION = $(shell $(GNUPLOT) --version $(GNUPLOT_CHECK_REDIRECT))
 ifeq ($(V),1)
 $(info TickTrade: CC=$(CC) PLATFORM=$(PLATFORM) CPPFLAGS=$(CPPFLAGS) CFLAGS=$(CFLAGS) LDFLAGS=$(LDFLAGS) PROVIDED_DIR=$(PROVIDED_DIR))
 endif
 
 .DEFAULT_GOAL := all
-.PHONY: all help clean distclean test test-unit test-test20 test-consistency test-replay stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-rival plot-ladder parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots stage0-check parser-compare-test parser-dev-test
+.PHONY: all help clean distclean test test-unit test-test20 test-consistency test-replay test-plot stage0 stageA stageA_plus ladder stageC tools stretch stretch-python run-stage0 run-stageA plot-signals plot-money-lost plot-rival plot-ladder parser_compare profile-data bench bench-pi perf memory replay-realtime replay-100x replay-1000x race-v0 race-fast rival asm plots stage0-check parser-compare-test parser-dev-test
 
 all: $(BUILD)/stageA_stream$(EXE) $(BUILD)/platform_check$(EXE) $(BUILD)/parser_compare$(EXE) $(BUILD)/data_profile$(EXE)
 
@@ -177,6 +179,9 @@ help:
 	@echo "run-stage0: run Stage 0 programs"
 	@echo "run-stageA: run Stage A on course files"
 	@echo "plot-signals: export and plot Stage A signals"
+	@echo "plot-money-lost: plot the rival money-lost sweep"
+	@echo "plot-ladder: plot the engine ladder benchmark"
+	@echo "test-plot: validate registered plot data, PNGs and summaries"
 	@echo "plot-rival: generate and plot the rival reaction sweep"
 	@echo "plot-ladder: plot median ladder timings when gnuplot is installed"
 	@echo "test: run C unit and integration tests"
@@ -203,8 +208,8 @@ help:
 	@echo "distclean: remove build and generated results"
 	@echo "stage0-check: run provided Stage 0 helper check"
 
-test: test-unit test-consistency test-test20 parser-compare-test parser-dev-test test-replay
-test-unit: $(BUILD)
+test: test-unit test-consistency test-test20 parser-compare-test parser-dev-test test-replay test-plot
+test-unit: $(BUILD) $(BUILD)/stageA_stream$(EXE) $(BUILD)/test_plot_output$(EXE) $(BUILD)/test_plot_scripts$(EXE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_compat.c -o $(BUILD)/test_compat$(EXE)
 	$(BUILD)/test_compat$(EXE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_exit_codes.c -o $(BUILD)/test_exit_codes$(EXE)
@@ -239,6 +244,10 @@ test-unit: $(BUILD)
 	$(BUILD)/test_memusage$(EXE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) tests/test_platform.c src/common/platform.c -o $(BUILD)/test_platform$(EXE) $(LDFLAGS)
 	$(BUILD)/test_platform$(EXE)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DBUILD_DIR=\"$(BUILD)\" -DSTAGEA_BIN=\"$(BUILD)/stageA_stream$(EXE)\" tests/test_signals_dat.c -o $(BUILD)/test_signals_dat$(EXE)
+	$(BUILD)/test_signals_dat$(EXE)
+	$(BUILD)/test_plot_output$(EXE) --self-test --data-only
+	$(BUILD)/test_plot_scripts$(EXE)
 $(BUILD)/v0$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(filter-out $(OPT),$(CFLAGS)) -O0 -DENGINE_VERSION=v0 -DENGINE_BUILD_FLAGS=\"-O0\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v1$(EXE): src/ladder/v0_baseline.c $(ENGINE_COMMON) | $(BUILD)
@@ -344,14 +353,29 @@ run-stage0: stage0 | results/bench
 run-stageA: $(BUILD)/stageA_stream$(EXE)
 	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/test20.csv --short 3 --long 5
 	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG)
-plot-signals: $(BUILD)/stageA_stream$(EXE) | results/plots
-	$(BUILD)/stageA_stream$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG) --export-signals results/plots/signals.dat --slice-len 2000
-ifeq ($(strip $(GNUPLOT_PATH)),)
-	@echo "SKIPPED: gnuplot not found"
-else
-	$(GNUPLOT_PATH) scripts/plot_signals.gp
-endif
-plots: plot-signals plot-rival plot-ladder
+$(BUILD)/test_plot_output$(EXE): tests/test_plot_output.c tests/plot_registry.h tests/check.h | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DLADDER_SOURCE=\"$(LADDER_CSV)\" $< -o $@
+$(BUILD)/test_plot_scripts$(EXE): tests/test_plot_scripts.c tests/plot_registry.h tests/check.h | $(BUILD)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@
+plot-signals: $(BUILD)/stageA_stream$(EXE) $(BUILD)/test_plot_output$(EXE) | results/plots results/logs
+	$(if $(wildcard $(DATA)/dev_1M.csv),$(BUILD)/stageA_stream$(EXE) --file $(DATA)/dev_1M.csv --short $(SHORT) --long $(LONG) --export-signals results/plots/signals.dat --slice-len 2000,$(info SKIPPED: $(DATA)/dev_1M.csv not found (run make run-stageA first)))
+	$(if $(strip $(GNUPLOT_VERSION)),$(if $(wildcard $(DATA)/dev_1M.csv),$(if $(wildcard results/plots/signals.dat results/plots/signal_points.dat),$(GNUPLOT) scripts/plot_signals.gp 2> results/logs/gnuplot_signals.log,$(info SKIPPED: results/plots/signals.dat not found (run make plot-signals first))),$(info SKIPPED: $(DATA)/dev_1M.csv not found (run make run-stageA first))),echo SKIPPED: gnuplot not found)
+	$(if $(and $(strip $(GNUPLOT_VERSION)),$(wildcard $(DATA)/dev_1M.csv results/plots/signals.dat results/plots/signal_points.dat)),$(BUILD)/test_plot_output$(EXE) --plot signals --require,$(BUILD)/test_plot_output$(EXE) --plot signals --data-only)
+plot-money-lost: $(BUILD)/test_plot_output$(EXE) | results/plots results/logs
+	$(if $(strip $(GNUPLOT_VERSION)),$(if $(wildcard results/rival/sweep.csv),$(GNUPLOT) scripts/plot_money_lost.gp 2> results/logs/gnuplot_money_lost.log,$(info SKIPPED: results/rival/sweep.csv not found (run make rival first))),echo SKIPPED: gnuplot not found)
+	$(if $(and $(strip $(GNUPLOT_VERSION)),$(wildcard results/rival/sweep.csv)),$(BUILD)/test_plot_output$(EXE) --plot money-lost --require,$(BUILD)/test_plot_output$(EXE) --plot money-lost --data-only)
+plot-rival: rival plot-money-lost
+LADDER_CSV := results/bench/ladder_$(PLATFORM)_$(MEMBER).csv
+MEMORY_CSV := results/bench/memory_$(PLATFORM).csv
+plot-ladder: $(BUILD)/test_plot_output$(EXE) | results/plots results/logs results/bench
+	$(BUILD)/test_plot_output$(EXE) --prepare ladder
+	$(if $(strip $(GNUPLOT_VERSION)),$(if $(wildcard $(LADDER_CSV)),$(GNUPLOT) scripts/plot_ladder.gp 2> results/logs/gnuplot_ladder.log,$(info SKIPPED: $(LADDER_CSV) not found (run make bench first))),echo SKIPPED: gnuplot not found)
+	$(if $(and $(strip $(GNUPLOT_VERSION)),$(wildcard $(LADDER_CSV))),$(BUILD)/test_plot_output$(EXE) --plot ladder --require,$(BUILD)/test_plot_output$(EXE) --plot ladder --data-only)
+test-plot: $(BUILD)/test_plot_output$(EXE) | results/plots results/logs
+	$(BUILD)/test_plot_output$(EXE) --prepare ladder
+	$(if $(strip $(GNUPLOT_VERSION)),,echo SKIPPED: gnuplot not found)
+	$(if $(strip $(GNUPLOT_VERSION)),$(BUILD)/test_plot_output$(EXE),$(BUILD)/test_plot_output$(EXE) --data-only)
+plots: plot-signals plot-money-lost plot-ladder
 profile-data: $(BUILD)/data_profile$(EXE) | results/logs
 	$(BUILD)/data_profile$(EXE) --output results/logs/data_profile.txt $(DATA)/dev_1M.csv $(DATA)/stress_full.csv
 LADDER_CSV := results/bench/ladder_$(PLATFORM)_$(MEMBER).csv
@@ -368,14 +392,6 @@ bench: ladder $(BUILD)/v9_soa$(EXE) | results/bench
 	$(BUILD)/v8$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
 	$(BUILD)/v9_soa$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat $(REPEAT) --csv "$(LADDER_CSV)" --member "$(MEMBER)"
 	$(MAKE) plot-ladder
-plot-ladder: | results/plots
-ifeq ($(strip $(GNUPLOT_PATH)),)
-	@echo "SKIPPED: gnuplot not found"
-else ifeq ($(wildcard $(LADDER_CSV)),)
-	@echo "SKIPPED: ladder benchmark CSV not found"
-else
-	$(GNUPLOT_PATH) -e "input='$(LADDER_CSV)'; output='results/plots/ladder_$(PLATFORM)_$(MEMBER).png'" scripts/plot_ladder.gp
-endif
 memory: ladder $(BUILD)/v9_soa$(EXE) | results/bench
 	$(BUILD)/v0$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
 	$(BUILD)/v1$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --repeat 1 --csv "$(MEMORY_CSV)" --member "$(MEMBER)"
@@ -469,12 +485,6 @@ $(BUILD)/neon_sum$(EXE): src/stretch/neon/neon_sum.c src/common/platform.c $(BUI
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(NEON_CFLAGS) src/stretch/neon/neon_sum.c src/common/platform.c $(BUILD)/neon_scalar.o $(LDFLAGS) -lm -o $@
 rival: $(BUILD)/rival_sweep$(EXE) | results/rival
 	$(BUILD)/rival_sweep$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --output results/rival/sweep.csv --member $(MEMBER)
-plot-rival: rival | results/plots
-ifeq ($(strip $(GNUPLOT_PATH)),)
-	@echo "SKIPPED: gnuplot not found"
-else
-	$(GNUPLOT_PATH) scripts/plot_money_lost.gp
-endif
 asm: | $(BUILD) results/asm
 	$(CC) $(CPPFLAGS) $(CFLAGS) -S src/ladder/engine.c -o $(ASM_FILE)
 $(BUILD)/stage0_check$(EXE): $(PROVIDED_DIR)/test_helpers.c | $(BUILD)

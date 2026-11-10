@@ -21,8 +21,9 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Stage sources | `src/stageA/stageA_stream.c` | Streaming Stage A program and optional signal export. |
 | Shared modules | `src/common/cli.c`, `src/common/cli.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/result.c`, `src/common/result.h`, `src/common/platform.c`, `src/common/platform.h` | CLI, exact crossover, result output, timing and memory services. |
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Supplied stream reader and clock. |
-| Scripts | `scripts/plot_signals.gp` | Signal chart template. |
-| Tests and fixtures | `tests/test_trade.c`, `tests/test_result.c`, `tests/test_fixed_point.c`, `tests/fixtures/trades.csv`, `data/test20_expected.txt` | Input, result and course-oracle checks. |
+| Scripts | `scripts/common.gp`, `scripts/plot_signals.gp` | Shared headless style and fixed-path signal chart. |
+| Tests and fixtures | `tests/test_trade.c`, `tests/test_result.c`, `tests/test_fixed_point.c`, `tests/test_signals_dat.c`, `tests/test_plot_output.c`, `tests/test_plot_scripts.c`, `tests/plot_registry.h`, `tests/fixtures/trades.csv`, `data/test20_expected.txt` | Input, result, fixed-point, plot, and crossing-export checks. |
+| Generated plot data | `results/plots/signals.dat`, `results/plots/signal_points.dat` | `plot-signals` writes the trade trace and interpolated SMA crossings. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and platform flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv` | Course oracle and development input. |
 
@@ -46,7 +47,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Ladder compile flags | `v0`: `-O0`; `v1`: `-O2`; `v2`: `-O3`; `v3`: `$(OPT)` plus `-mcpu=cortex-a76` under `PI=1`; `v4`–`v9_soa`: `$(OPT)`, default `-O2`; `v7` additionally defines `ENGINE_STATIC_STORAGE` and `MAX_TRADES`. | Values are taken from the current Makefile recipes. |
 | Shared modules | `src/common/bench.c`, `src/common/bench.h`, `src/common/cli.c`, `src/common/cli.h`, `src/common/compat.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/indicators.c`, `src/common/indicators.h`, `src/common/memusage.c`, `src/common/memusage.h`, `src/common/platform.c`, `src/common/platform.h`, `src/common/result.c`, `src/common/result.h`, `src/common/signal_rule.c`, `src/common/signal_rule.h`, `src/common/trade.h` | Engine input, arithmetic, indicators, timing, memory and output contracts. |
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Baseline parser and clock. |
-| Scripts | `scripts/plot_ladder.gp` | Ladder median-time chart. |
+| Scripts | `scripts/common.gp`, `scripts/plot_ladder.gp` | Shared style and ladder median-time chart. |
 | Tests and fixtures | `tests/test_consistency.c`, `tests/test_bench.c`, `tests/test_fixed_point.c`, `tests/test_indicators.c`, `tests/test_memusage.c`, `tests/test_result.c`, `tests/test_trade.c`, `tests/check.h`, `tests/fixtures/trades.csv` | Rung equality, arithmetic, indicator and result checks. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and architecture flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv`, `data/stress_full.csv` | Course oracle, development and final comparison inputs. |
@@ -70,7 +71,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Stage sources | `src/stageC/rival_sweep.c` | Read signals and write reaction-time sweep rows. |
 | Shared modules | `src/common/rival.c`, `src/common/rival.h`, `src/common/platform.c`, `src/common/platform.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/cli.c`, `src/common/result.c`, `src/common/latency.c`, `src/common/latency.h` | Fill rules, parser support, timing and result metadata. |
 | Provided files | — | The sweep uses the Stage A+ parser. |
-| Scripts | `scripts/plot_money_lost.gp` | Reaction-time P&L chart. |
+| Scripts | `scripts/common.gp`, `scripts/plot_money_lost.gp` | Shared style and reaction-time money-lost chart. |
 | Tests and fixtures | `tests/test_rival.c`, `tests/check.h` | Fill boundary and P&L behavior. |
 | Configuration | `config/groups.mk` | Group 05 default short/long windows. |
 | Data inputs | `data/stress_full.csv`, `tests/fixtures/trades.csv` | Sweep input and small validation data. |
@@ -137,7 +138,8 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | --- | --- | --- |
 | Tools | `src/tools/data_profile.c`, `src/tools/platform_check.c` | Numeric profile and platform prerequisite inspection. |
 | Shared modules | `src/common/bench.c`, `src/common/bench.h`, `src/common/cli.c`, `src/common/cli.h`, `src/common/compat.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/indicators.c`, `src/common/indicators.h`, `src/common/latency.c`, `src/common/latency.h`, `src/common/memusage.c`, `src/common/memusage.h`, `src/common/platform.c`, `src/common/platform.h`, `src/common/replay.c`, `src/common/replay.h`, `src/common/replay_events.c`, `src/common/replay_events.h`, `src/common/result.c`, `src/common/result.h`, `src/common/rival.c`, `src/common/rival.h`, `src/common/signal_display.c`, `src/common/signal_display.h`, `src/common/signal_rule.c`, `src/common/signal_rule.h`, `src/common/trade.h` | Shared headers and implementations used across the listed stages and tests. |
-| Scripts | `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp` | The project's gnuplot programs. |
+| Scripts | `scripts/common.gp`, `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp` | Shared plot style and all registered gnuplot programs. |
+| Plot registry | `tests/plot_registry.h` | Single source for plot names, inputs, columns, PNGs, dimensions, summaries, logs and checks. |
 | Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and compile switches. |
 
 ## File coverage check
@@ -145,8 +147,8 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Tree | Files indexed | Check |
 | --- | --- | --- |
 | `src/` | 62 files, all listed in the stage and shared-module tables above. | 62 indexed; 0 missing in the filesystem inventory. |
-| `tests/` | 22 test and fixture files. | 22 indexed; 0 missing in the filesystem inventory. |
-| `scripts/` | `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp`. | 3 indexed; 0 missing in the filesystem inventory. |
+| `tests/` | 26 test and fixture files, including `tests/plot_registry.h`. | 26 indexed; 0 missing in the filesystem inventory. |
+| `scripts/` | `scripts/common.gp`, `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp`. | 4 indexed; 0 missing in the filesystem inventory. |
 | `config/` | `config/groups.mk`, `config/platform_flags.mk`. | 2 indexed; 0 missing in the filesystem inventory. |
 
-**Inventory check:** `rg --files src tests scripts config` returned 89 paths: 62 under `src/`, 22 under `tests/`, 3 under `scripts/`, and 2 under `config/`. Each is represented in the stage-category tables above. Rerun this command after adding or removing files.
+**Inventory check:** `rg --files src tests scripts config` returned 94 paths: 62 under `src/`, 26 under `tests/`, 4 under `scripts/`, and 2 under `config/`. Each is represented in the stage-category tables above. Rerun this command after adding or removing files.

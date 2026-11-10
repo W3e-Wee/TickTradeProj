@@ -316,7 +316,7 @@ static int engine_write_bench_csv(const char *path, const char *member,
                                   uint64_t best_ns, uint64_t worst_ns)
 {
     static const char header[] = "platform,member,version,file,trades,repeats,median_total_ns,best_total_ns,worst_total_ns,median_process_ns,trades_per_sec,peak_mem_kb,compiler,flags";
-    FILE *file = fopen(path, "a+");
+    FILE *file = fopen(path, "ab+");
     if (file == NULL) return 0;
     if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return 0; }
     long end = ftell(file);

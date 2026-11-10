@@ -28,7 +28,8 @@ int main(int argc, char **argv)
     const char *output_path = "results/rival/sweep.csv";
     const char *member = "member";
     int short_window = DEFAULT_SHORT_WINDOW, long_window = DEFAULT_LONG_WINDOW;
-    for (int i = 1; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) 
+    {
         if (i + 1 >= argc) return 2;
         const char *key = argv[i++], *value = argv[i];
         if (strcmp(key, "--file") == 0) path = value;
@@ -43,12 +44,24 @@ int main(int argc, char **argv)
         }
         else return 2;
     }
+
     if (long_window < short_window) return 2;
+
     FILE *file = fopen(path, "rb");
-    if (file == NULL) { fprintf(stderr, "rival: cannot open input '%s': %s\n", path, strerror(errno)); return 6; }
+    if (file == NULL) 
+    { 
+        fprintf(stderr, "rival: cannot open input '%s': %s\n", path, strerror(errno)); 
+        return 6; 
+    }
+
     size_t cap = 4096, count = 0;
     Sample *rows = (Sample *)malloc(cap * sizeof *rows);
-    if (rows == NULL) { fclose(file); return 6; }
+    if (rows == NULL) 
+    { 
+        fclose(file); 
+        return 6; 
+    }
+    
     for (;;) {
         long long ts; double price, qty; int side;
         int status = fast_read_trade(file, &ts, &price, &qty, &side);
@@ -63,7 +76,13 @@ int main(int argc, char **argv)
         }
         rows[count++] = (Sample){price, 0, 0};
     }
-    if (ferror(file) || fclose(file) != 0 || count < (size_t)long_window) { free(rows); return 6; }
+
+    if (ferror(file) || fclose(file) != 0 || count < (size_t)long_window) 
+    { 
+        free(rows); 
+        return 6; 
+    }
+
     int previous = 0;
     int64_t *short_ring = (int64_t *)calloc((size_t)short_window, sizeof *short_ring);
     int64_t *long_ring = (int64_t *)calloc((size_t)long_window, sizeof *long_ring);
@@ -104,13 +123,28 @@ int main(int argc, char **argv)
     if (prices == NULL || signals == NULL || work == NULL || points == NULL) {
         free(rows); free(prices); free(signals); free(work); free(points); return 6;
     }
-    for (size_t i = 0; i < count; ++i) { prices[i] = rows[i].price; signals[i] = rows[i].signal; work[i] = rows[i].work_ns; }
-    rival_sweep_points(points, 25);
-    FILE *output = fopen(output_path, "wb");
-    if (output == NULL) {
-        fprintf(stderr, "rival: cannot write output in directory for '%s': %s\n", output_path, strerror(errno));
-        free(rows); free(prices); free(signals); free(work); free(points); return 6;
+    for (size_t i = 0; i < count; ++i) 
+    { 
+        prices[i] = rows[i].price; 
+        signals[i] = rows[i].signal; 
+        work[i] = rows[i].work_ns; 
     }
+    rival_sweep_points(points, 25);
+    
+    FILE *output = fopen(output_path, "wb");
+    if (output == NULL) 
+    {
+        fprintf(stderr, "rival: cannot write output in directory for '%s': %s\n", 
+            output_path, strerror(errno));
+        free(rows); 
+        free(prices); 
+        free(signals); 
+        free(work); 
+        free(points); 
+        
+        return 6;
+    }
+    
     fprintf(output, "platform,member,reaction_us,pnl,money_lost,trades\n");
     RivalResult baseline = rival_simulate(prices, signals, work, count, points[0]);
     for (size_t i = 0; i < 25; ++i) {

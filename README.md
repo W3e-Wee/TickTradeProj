@@ -46,7 +46,7 @@ This project is configured for Group 05: short window 30, long window 60. `test2
 | Stage A+ | `make parser-compare-test`, `make parser-dev-test` | Compare the supplied reader with the hand-written parser. |
 | Stage B | `make profile-data`, `make bench`, `make memory` | Profile numeric ranges, measure the ladder and record memory use. |
 | Stage C | `make replay-realtime`, `make replay-100x`, `make replay-1000x`, `make asm` | Replay trades, collect latency and lag, and generate a host assembly listing. |
-| Rival | `make rival`, `make plot-rival` | Compare fills over a reaction-time sweep. |
+| Rival | `make rival`, `make plot-money-lost` | Compare fills over a reaction-time sweep. `make plot-rival` remains a convenience target that runs the producer first. |
 | Race | `make race-v0` and `make race-fast` | Run the baseline and fastest cores in separate terminals with the same file and speed. |
 | Stretch | `make stretch`, `make stretch-python` | Run the NEON-intrinsic kernel, SoA engine and optional Python comparison. |
 
@@ -82,9 +82,15 @@ docs/                     Design, runbook, stage and evidence documentation
 
 Add a front end under `src/ladder/`, connect it to the shared engine contract, add its source and compile flags to the Makefile, include it in `test-consistency`, benchmark rows and file/output documentation, then run `make test`. Keep crossover decisions on exact scaled-integer comparisons.
 
+## Add a plot
+
+Adding a plot = new script + registry row + `plot-<name>` target + documentation rows. Every script starts with `load "scripts/common.gp"`, uses repository-relative paths, and is validated by `test_plot_scripts` and the plot registry.
+
 ## Troubleshooting
 
-Use GNU Make, not the BSD `make` shipped with macOS. On Windows, start the UCRT64 terminal or use `mingw32-make`; MSVC is unsupported. The Makefile adds `_GNU_SOURCE` on Linux and `_POSIX_C_SOURCE=200809L` on macOS; Windows receives neither. Missing gnuplot or Python only skips the plot or Python stretch target. Normal C builds and tests do not require Python.
+Use GNU Make, not the BSD `make` shipped with macOS. On Windows, use the MSYS2 UCRT64 console gnuplot and `mingw32-make`; `wgnuplot` is unsupported. The Makefile adds `_GNU_SOURCE` on Linux and `_POSIX_C_SOURCE=200809L` on macOS; Windows receives neither. Missing gnuplot or plot inputs produce a `SKIPPED:` message; Python is only needed for its stretch target. Normal C builds and tests do not require Python.
+
+Run `make plots` from the repository root. If a chart is blank or a line is missing, inspect its `results/logs/gnuplot_<name>.log` and confirm the required data file exists. If signal markers are missing or off the crossings, regenerate with `make plot-signals`; markers come from interpolated points in `signal_points.dat`. If gnuplot reports `unknown terminal type`, install gnuplot 5.0 or newer with `pngcairo` or `png`. For `header column not found`, restore the expected CSV header names and check that the file uses LF line endings. `SKIPPED: gnuplot not found` means install the gnuplot console program; `SKIPPED: <file> not found (run make <producer> first)` means run the named producer target. The registry-driven checker validates chart dimensions, data counts and axis ranges.
 
 ## Stretch goals and academic integrity
 

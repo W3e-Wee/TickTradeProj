@@ -16,10 +16,18 @@ Output paths and headers below are taken from the Makefile and source. Generated
 | `results/replay/<platform>_<member>_<core>_<speed>x.csv` | Replay program | `platform,member,core,speed,trades_replayed,market_seconds,wall_seconds,avg_latency_ns,worst_latency_ns,p50_latency_ns,p99_latency_ns,avg_processing_ns,max_lag_us,pct_behind,dropped_events,buys,sells,pnl_vs_rival_r1` | GENERATED HERE |
 | `results/replay/summary_<platform>_<member>.csv` | Replay program | Per-run summary with the replay CSV schema above | GENERATED HERE |
 | `results/rival/sweep.csv` | `rival` | `platform,member,reaction_us,pnl,money_lost,trades` | PATH FROM CODE, NOT RUN HERE |
-| `results/plots/signals.dat` | `plot-signals` | Tab-separated signal trace; columns are declared by the Stage A exporter | PATH FROM CODE, NOT RUN HERE |
-| `results/plots/signals.png` | gnuplot `plot_signals.gp` | PNG chart | PATH FROM CODE, NOT RUN HERE |
-| `results/plots/money_lost.png` | gnuplot `plot_money_lost.gp` | PNG chart | PATH FROM CODE, NOT RUN HERE |
-| `results/plots/ladder_<platform>_<member>.png` | gnuplot `plot_ladder.gp` | PNG chart | PATH FROM CODE, NOT RUN HERE |
+| `results/plots/signals.dat` | `plot-signals` | One LF-terminated row per slice trade: trade number, price, short SMA, long SMA, signal (`1`, `-1`, or `0`) | GENERATED HERE |
+| `results/plots/signal_points.dat` | `plot-signals` | One LF-terminated row per signal: interpolated crossing x, y, and side (`1` BUY or `-1` SELL) | GENERATED HERE |
+| `results/plots/signals.png` | `plot-signals` via `scripts/plot_signals.gp` | 1400×700 PNG with price, both SMAs, and crossing markers | GENERATED HERE |
+| `results/logs/gnuplot_signals.log` | `plot-signals` | Captured gnuplot stderr; registry failure patterns fail validation | GENERATED HERE |
+| `results/logs/plot_signals_summary.txt` | `plot-signals` | `rows`, one `points_<series>` count per line series, and `xmin`, `xmax`, `ymin`, `ymax` | GENERATED HERE |
+| `results/plots/money_lost.png` | `plot-money-lost` | 1400×700 PNG of money lost across the positive reaction-time sweep | GENERATED HERE |
+| `results/logs/gnuplot_money_lost.log` | `plot-money-lost` | Captured gnuplot stderr; checked for fatal diagnostic patterns | GENERATED HERE |
+| `results/logs/plot_money_lost_summary.txt` | `plot-money-lost` | Rows, `points_money_lost`, and plotted x/y bounds | GENERATED HERE |
+| `results/bench/ladder_plot_input.csv` | `plot-ladder` | LF-only CSV containing the latest row for each engine version from the platform/member benchmark file | GENERATED HERE |
+| `results/plots/ladder.png` | `plot-ladder` | 1400×700 PNG of median total time by engine version | GENERATED HERE |
+| `results/logs/gnuplot_ladder.log` | `plot-ladder` | Captured gnuplot stderr; checked for fatal diagnostic patterns | GENERATED HERE |
+| `results/logs/plot_ladder_summary.txt` | `plot-ladder` | Rows, `points_median_total_ns`, and plotted x/y bounds | GENERATED HERE |
 | `results/asm/<version>_<architecture>.s` | `asm` | Compiler assembly listing | GENERATED HERE |
 | `build/<platform>/python_c_reference.txt` | `stretch-python` | C `RESULT` record used for comparison | GENERATED HERE |
 | `build/<platform>/*.exe` or `build/<platform>/*` | `all`, stage/ladder/replay/stretch/test builds | Compiler outputs: programs, test runners, object and dependency files | GENERATED HERE (Windows build) |
