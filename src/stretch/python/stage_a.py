@@ -20,6 +20,9 @@ EXIT_MISMATCH = 4
 EXIT_IO_ERROR = 6
 RESULT_PATTERN = re.compile(r"([A-Za-z_]+)=([^ ]+)")
 CSV_HEADER = "platform,member,implementation,file,trades,short,long,limit,repeats,median_total_ns,c_total_ns,times_slower_than_c,matches_c,python_version,numpy_version"
+# Group 05 defaults; Make targets pass explicit windows when configured.
+DEFAULT_SHORT_WINDOW = 30
+DEFAULT_LONG_WINDOW = 60
 
 
 def parse_scaled(text):
@@ -177,8 +180,8 @@ def arguments(argv):
     """Define and validate the shared command-line arguments."""
     parser = argparse.ArgumentParser(description="Pure Python streaming Stage A reference")
     parser.add_argument("--file", required=True)
-    parser.add_argument("--short", type=int, default=10)
-    parser.add_argument("--long", type=int, default=60)
+    parser.add_argument("--short", type=int, default=DEFAULT_SHORT_WINDOW)
+    parser.add_argument("--long", type=int, default=DEFAULT_LONG_WINDOW)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--compare-c")

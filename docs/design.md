@@ -4,6 +4,8 @@
 
 The programs consume timestamped trade CSV rows and calculate VWAP, one-second OHLC bar counts, and short/long moving-average crossover signals. All input data remains offline. Row counts and decimal ranges are produced by `make profile-data` from the selected inputs; filenames are not treated as row-count guarantees.
 
+Group 05 is the configured default with short window 30 and long window 60. The test20 course oracle always uses 3/5; command-line `SHORT` and `LONG` overrides select other experimental windows.
+
 ## Architecture decisions
 
 - Portable APIs live under `src/common/`; operating-system code is isolated in `platform.c` and the exact provided support files remain under `provided/`.

@@ -23,7 +23,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Supplied stream reader and clock. |
 | Scripts | `scripts/plot_signals.gp` | Signal chart template. |
 | Tests and fixtures | `tests/test_trade.c`, `tests/test_result.c`, `tests/test_fixed_point.c`, `tests/fixtures/trades.csv`, `data/test20_expected.txt` | Input, result and course-oracle checks. |
-| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Window selection and platform flags. |
+| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and platform flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv` | Course oracle and development input. |
 
 ## Stage A+
@@ -48,7 +48,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Provided files | `provided/trade_io.c`, `provided/trade_io.h`, `provided/timing.h` | Baseline parser and clock. |
 | Scripts | `scripts/plot_ladder.gp` | Ladder median-time chart. |
 | Tests and fixtures | `tests/test_consistency.c`, `tests/test_bench.c`, `tests/test_fixed_point.c`, `tests/test_indicators.c`, `tests/test_memusage.c`, `tests/test_result.c`, `tests/test_trade.c`, `tests/check.h`, `tests/fixtures/trades.csv` | Rung equality, arithmetic, indicator and result checks. |
-| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Windows by group and architecture flags. |
+| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and architecture flags. |
 | Data inputs | `data/test20.csv`, `data/test20_expected.txt`, `data/dev_1M.csv`, `data/stress_full.csv` | Course oracle, development and final comparison inputs. |
 
 ## Stage C
@@ -60,7 +60,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Provided files | `provided/led.h`, `provided/timing.h`, `provided/trade_io.c`, `provided/trade_io.h` | LED, clock and baseline reader. |
 | Scripts | — | Replay results are recorded as CSV. |
 | Tests and fixtures | `tests/test_replay.c`, `tests/test_replay_events.c`, `tests/test_replay_output.c`, `tests/test_latency.c`, `tests/test_platform.c`, `tests/test_signal_display.c`, `tests/fixtures/replay.csv`, `tests/check.h` | Schedule, event, output, percentile and platform checks. |
-| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Replay windows and compile flags. |
+| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Replay windows and compile flags; Group 05 is the default. |
 | Data inputs | `data/stress_full.csv`, `data/dev_1M.csv`, `tests/fixtures/replay.csv` | Full replay and bounded pacing fixture. |
 
 ## Rival bot demonstration
@@ -72,7 +72,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Provided files | — | The sweep uses the Stage A+ parser. |
 | Scripts | `scripts/plot_money_lost.gp` | Reaction-time P&L chart. |
 | Tests and fixtures | `tests/test_rival.c`, `tests/check.h` | Fill boundary and P&L behavior. |
-| Configuration | `config/groups.mk` | Default short/long windows. |
+| Configuration | `config/groups.mk` | Group 05 default short/long windows. |
 | Data inputs | `data/stress_full.csv`, `tests/fixtures/trades.csv` | Sweep input and small validation data. |
 
 ## Race demonstration
@@ -84,7 +84,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Provided files | `provided/led.h`, `provided/timing.h`, `provided/trade_io.c`, `provided/trade_io.h` | Platform helper services. |
 | Scripts | — | Compare the separate replay CSVs or terminal summaries. |
 | Tests and fixtures | `tests/test_replay.c`, `tests/test_replay_output.c`, `tests/fixtures/replay.csv`, `tests/check.h` | Replay timing and output validation. |
-| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Windows and compiler selection. |
+| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and compiler selection. |
 | Data inputs | `data/stress_full.csv`, `tests/fixtures/replay.csv` | Shared race input and smoke fixture. |
 
 ## Stretch goals
@@ -138,7 +138,7 @@ This map reflects the direct Makefile source lists and generated `-MMD -MP` depe
 | Tools | `src/tools/data_profile.c`, `src/tools/platform_check.c` | Numeric profile and platform prerequisite inspection. |
 | Shared modules | `src/common/bench.c`, `src/common/bench.h`, `src/common/cli.c`, `src/common/cli.h`, `src/common/compat.h`, `src/common/exit_codes.h`, `src/common/fixed_point.c`, `src/common/fixed_point.h`, `src/common/indicators.c`, `src/common/indicators.h`, `src/common/latency.c`, `src/common/latency.h`, `src/common/memusage.c`, `src/common/memusage.h`, `src/common/platform.c`, `src/common/platform.h`, `src/common/replay.c`, `src/common/replay.h`, `src/common/replay_events.c`, `src/common/replay_events.h`, `src/common/result.c`, `src/common/result.h`, `src/common/rival.c`, `src/common/rival.h`, `src/common/signal_display.c`, `src/common/signal_display.h`, `src/common/signal_rule.c`, `src/common/signal_rule.h`, `src/common/trade.h` | Shared headers and implementations used across the listed stages and tests. |
 | Scripts | `scripts/plot_ladder.gp`, `scripts/plot_money_lost.gp`, `scripts/plot_signals.gp` | The project's gnuplot programs. |
-| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group windows and compile switches. |
+| Configuration | `config/groups.mk`, `config/platform_flags.mk` | Group 05 windows and compile switches. |
 
 ## File coverage check
 

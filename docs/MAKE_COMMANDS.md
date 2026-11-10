@@ -8,8 +8,8 @@ This reference was checked against `.PHONY`, `make help`, Makefile recipes and `
 | --- | --- | --- | --- |
 | `CC` | `gcc` when Make's built-in default is unchanged | C compiler. | `make CC=clang all` |
 | `OPT` | `-O2` | Default optimization for non-ladder C builds. | `make OPT=-O3 ladder` |
-| `GROUP` | `01` | Selects the short/long pair from `config/groups.mk`. | `make GROUP=07 test-consistency` |
-| `SHORT`, `LONG` | Group values | Explicit indicator window overrides. | `make SHORT=3 LONG=5 run-stageA` |
+| `GROUP` | `05` | This project is configured for Group 05: short window 30, long window 60. `test20` always uses 3/5. Use `SHORT=` and `LONG=` to experiment. Only Group 05 is configured; other values require both overrides. | `make GROUP=05 test-consistency` |
+| `SHORT`, `LONG` | Group 05 values | Explicit indicator window overrides; both are required with a non-05 `GROUP`. | `make SHORT=10 LONG=60 run-stageA` |
 | `DATA` | `data` | Course data directory. | `make DATA=data run-stageA` |
 | `FILE` | `$(DATA)/stress_full.csv` | Input for benchmark, replay, race and rival targets. | `make FILE=tests/fixtures/replay.csv replay-1000x` |
 | `PYFILE` | `$(DATA)/stress_full.csv` | Input for the Python stretch. | `make PYFILE=data/test20.csv stretch-python` |
@@ -106,7 +106,7 @@ make plot-rival
 
 ## Race demonstration
 
-**Goal:** run baseline and fast replay processes independently at the same speed and input. **Availability:** all supported platforms; use the same `FILE`, `SPEED`, `GROUP`, and `MEMBER` values in both terminals.
+**Goal:** run baseline and fast replay processes independently at the same speed and input. **Availability:** all supported platforms; use the same `FILE`, `SPEED`, `SHORT`, `LONG`, and `MEMBER` values in both terminals.
 
 Terminal one:
 

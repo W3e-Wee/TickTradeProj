@@ -8,6 +8,15 @@
 - The same 39 retained Make targets completed before and after with exit status zero. Optional prerequisite skips were unchanged. Output fingerprints, CSV headers, created/updated path manifests, and the 39 dry-run recipes matched; the help output differs only by the removed entries.
 - A clean build and the full `make test` suite passed after the changes. `make distclean` preserved all seven results placeholders.
 
+## Group 05 configuration follow-up
+
+- Before edits, `config/groups.mk` had 21 group entries and Make defaulted to 10/60. `data/group_info.txt` already specifies Group 05 at 30/60 and test20 at 3/5; the course data file was left unchanged.
+- Baseline `make clean && make && make test` passed using the old 10/60 default. At 30/60, v0, Stage A and v8 independently produced the same dev_1M counts and signal hash. At 10/60, v0 and Stage A agreed on a different signal hash.
+- Group 05 configuration, C and Python CLI defaults, rival sweep windows, and documentation have been updated. The clean build and full test suite pass at 30/60; the course test20 oracle remains at 3/5. Default Stage A and explicit 10/60 override runs pass, and v0, Stage A and v8 agree on the dev_1M result at 30/60.
+- Fixture-backed ladder, memory, rival, replay, race and Python stretch runs pass with the configured windows. `make help` lists the retained targets; dry runs were captured for all 39 targets. The command table covers 39/39 targets, editor tasks parse and map to existing targets, and all relative documentation links resolve.
+- Optional prerequisites absent on this Windows host: gnuplot, the Make-selected `python3` NumPy module, Linux `perf`, and Raspberry Pi/Linux support. Their targets report the corresponding prerequisite skips. Linux, macOS and Pi remain unverified.
+- The Group 05 follow-up is complete after the final clean build/test gate and placeholder check.
+
 ## Verified project state before this cleanup
 
 - The earlier Windows session passed the clean build, full test suite, course expected-output comparison, Stage 0/A/A+ checks, ladder consistency on development and stress files, Stage C replay/race/rival checks, and host assembly generation.

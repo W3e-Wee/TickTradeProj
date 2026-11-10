@@ -117,3 +117,4 @@ Each bullet records a removed, moved, or rewritten file from the cleanup pass.
 - Deleted `results/laptop/assembly-runs/prior-inspection/20261106T015009Z/inspection_command.txt`.
 - Deleted the now-empty legacy folders `asm/`, `include/`, `provided/`, `python/`, `results/laptop/`, and both Python cache folders.
 - Removed targets `verify`/`verify-golden`/`update-golden`/`strict`, folder `tests/golden/` and files `tests/golden/dev_1M_group01.txt`, `tests/golden/fixture_group01.txt`, `tests/golden/test20_group01.txt`.
+- Reduced `config/groups.mk` to Group 05 (30/60); removed entries for all other groups.

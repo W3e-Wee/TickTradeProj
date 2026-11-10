@@ -28,7 +28,7 @@ Output paths and headers below are taken from the Makefile and source. Generated
 | `results/bench/c_vs_python.csv` | C-versus-Python stretch | Python comparison header above | GENERATED HERE (pure Python passed; NumPy unavailable) |
 | Console output | NEON stretch | Console summary compares scalar and intrinsic kernel; no separate CSV | PATH FROM CODE, NOT RUN HERE |
 
-Programs print a machine-readable `RESULT` line with `version`, `file`, trade/window counts, VWAP, bars, buys/sells, `signal_hash`, load/process/total nanoseconds, and peak memory. Console summaries are not appended to CSV unless the row is listed above.
+Programs print a machine-readable `RESULT` line with `version`, `file`, trade/window counts, VWAP, bars, buys/sells, `signal_hash`, load/process/total nanoseconds, and peak memory. The reported windows reflect the Group 05 defaults or the explicit `SHORT` and `LONG` overrides used for the run. Console summaries are not appended to CSV unless the row is listed above.
 
 ## Result directories
 

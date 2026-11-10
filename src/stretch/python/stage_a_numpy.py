@@ -16,6 +16,9 @@ except ImportError:
     sys.exit(0)
 
 SCALE = 100_000_000
+# Group 05 defaults; Make targets pass explicit windows when configured.
+DEFAULT_SHORT_WINDOW = 30
+DEFAULT_LONG_WINDOW = 60
 MAX_INT64 = (1 << 63) - 1
 MASK64 = (1 << 64) - 1
 FNV_OFFSET = 14695981039346656037
@@ -169,8 +172,8 @@ def arguments(argv):
     """Define shared options and reject invalid window or repeat values."""
     parser = argparse.ArgumentParser(description="NumPy-vectorised Stage A")
     parser.add_argument("--file", required=True)
-    parser.add_argument("--short", type=int, default=10)
-    parser.add_argument("--long", type=int, default=60)
+    parser.add_argument("--short", type=int, default=DEFAULT_SHORT_WINDOW)
+    parser.add_argument("--long", type=int, default=DEFAULT_LONG_WINDOW)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--compare-c")

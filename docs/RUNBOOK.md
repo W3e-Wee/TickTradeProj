@@ -12,6 +12,8 @@ make test
 
 The project builds its C programs without Python. `make stretch-python` is the only Python-dependent target. Course datasets belong in `data/` and are not part of the repository; fixture-backed parser and consistency checks remain available without them.
 
+This project is configured for Group 05 with short window 30 and long window 60. `test20` always uses 3/5. Pass both `SHORT=` and `LONG=` to experiment with other windows; a non-05 `GROUP` also requires both overrides.
+
 ## Stage 0 and Stage A
 
 ```sh
@@ -35,7 +37,7 @@ make memory MEMBER=member
 make plot-ladder
 ```
 
-Set `DATA`, `FILE`, `GROUP`, `SHORT`, and `LONG` as needed. `bench` appends engine rows to `results/bench/ladder_<platform>_<member>.csv`; `memory` appends peak-memory rows to `results/bench/memory_<platform>.csv`. The chart step skips if gnuplot is missing.
+Set `DATA`, `FILE`, `SHORT`, and `LONG` as needed. `bench` appends engine rows to `results/bench/ladder_<platform>_<member>.csv`; `memory` appends peak-memory rows to `results/bench/memory_<platform>.csv`. The chart step skips if gnuplot is missing.
 
 ## Replay and race
 
@@ -48,7 +50,7 @@ make race-fast
 make asm
 ```
 
-By default replay targets run both the baseline and fast engines. Set `CORE=v0` or `CORE=fast` to run one. `FILE`, `SPEED`, `DURATION`, `GROUP`, and `MEMBER` control the run. Real-time replay plays the selected market-time window; accelerated replay consumes the input file. Results are written under `results/replay/`. Laptop output reports LED state in the terminal; supported Pi hardware can drive the provided LED helper. `make asm` emits a listing named for the compiler architecture. Only an AArch64 Pi build supplies the CSC1104 architecture listing.
+By default replay targets run both the baseline and fast engines. Set `CORE=v0` or `CORE=fast` to run one. `FILE`, `SPEED`, `DURATION`, `SHORT`, `LONG`, and `MEMBER` control the run. Real-time replay plays the selected market-time window; accelerated replay consumes the input file. Results are written under `results/replay/`. Laptop output reports LED state in the terminal; supported Pi hardware can drive the provided LED helper. `make asm` emits a listing named for the compiler architecture. Only an AArch64 Pi build supplies the CSC1104 architecture listing.
 
 For the race demonstration, use two terminals with identical parameters. Start `make FILE=data/stress_full.csv SPEED=1000 race-v0` in one, then `make FILE=data/stress_full.csv SPEED=1000 race-fast` in the other.
 

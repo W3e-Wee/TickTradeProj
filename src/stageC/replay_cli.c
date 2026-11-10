@@ -24,10 +24,10 @@
 #include <string.h>
 
 #ifndef DEFAULT_SHORT_WINDOW
-#define DEFAULT_SHORT_WINDOW 10
+#define DEFAULT_SHORT_WINDOW 30 /* Group 05 default; Make may override it. */
 #endif
 #ifndef DEFAULT_LONG_WINDOW
-#define DEFAULT_LONG_WINDOW 60
+#define DEFAULT_LONG_WINDOW 60 /* Group 05 default; Make may override it. */
 #endif
 #ifndef REPLAY_FAST_LABEL
 #define REPLAY_FAST_LABEL "v8"

@@ -16,10 +16,10 @@
 
 #define MAX_WINDOW 100000
 #ifndef DEFAULT_SHORT_WINDOW
-#define DEFAULT_SHORT_WINDOW 10
+#define DEFAULT_SHORT_WINDOW 30 /* Group 05 default; Make may override it. */
 #endif
 #ifndef DEFAULT_LONG_WINDOW
-#define DEFAULT_LONG_WINDOW 60
+#define DEFAULT_LONG_WINDOW 60 /* Group 05 default; Make may override it. */
 #endif
 /* Write the selected plot slice after computation so disk I/O is untimed. */
 static int write_slice(const char *path, const double *price, const double *short_sma,

@@ -35,7 +35,7 @@ On macOS, substitute `gmake` if GNU Make is installed under that name. In Window
 
 ## Choose your group
 
-`GROUP` selects the short and long moving-average windows in `config/groups.mk`. For example, `make GROUP=07 test-consistency` uses the configured windows for that group. `test20.csv` always uses windows 3 and 5.
+This project is configured for Group 05: short window 30, long window 60. `test20` always uses 3/5. Use `SHORT=` and `LONG=` to experiment. `GROUP=05` is the only configured group; selecting another `GROUP` requires both overrides.
 
 ## Stage guide and Make targets
 
@@ -64,7 +64,7 @@ Run `make profile-data` before choosing fixed-point scales. `make bench REPEAT=5
 
 ```text
 Makefile, README.md       Build and newcomer guide
-config/                   Group windows and platform flags
+config/                   Group 05 windows and platform flags
 data/                     Separately supplied datasets
 provided/                 Unmodified course helper files
 src/common/               Shared indicators, timing, replay and result modules

@@ -2,7 +2,7 @@ ifeq ($(origin CC),default)
 CC = gcc
 endif
 OPT ?= -O2
-GROUP ?= 01
+GROUP ?= 05
 DATA ?= data
 FILE ?= $(DATA)/stress_full.csv
 MEMBER ?= member
@@ -24,6 +24,14 @@ PYREPEAT ?= 3
 V ?= 0
 include config/groups.mk
 include config/platform_flags.mk
+ifneq ($(GROUP),05)
+ifeq ($(strip $(SHORT)),)
+$(error Only GROUP=05 (short 30, long 60) is configured. Pass SHORT=<n> LONG=<n> to override.)
+endif
+ifeq ($(strip $(LONG)),)
+$(error Only GROUP=05 (short 30, long 60) is configured. Pass SHORT=<n> LONG=<n> to override.)
+endif
+endif
 SHORT ?= $(GROUP_$(GROUP)_SHORT)
 LONG ?= $(GROUP_$(GROUP)_LONG)
 PLATFORM := windows
@@ -452,7 +460,7 @@ $(BUILD)/replay_v0$(EXE): src/stageC/replay_v0.c $(REPLAY_COMMON) | $(BUILD)
 $(BUILD)/replay_fast$(EXE): src/stageC/replay_fast.c $(REPLAY_COMMON) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DREPLAY_FAST_LABEL=\"$(FASTEST)\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/rival_sweep$(EXE): src/stageC/rival_sweep.c src/stageA_plus/fast_parser.c src/common/rival.c src/common/platform.c src/common/fixed_point.c | $(BUILD)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -DDEFAULT_SHORT_WINDOW=$(SHORT) -DDEFAULT_LONG_WINDOW=$(LONG) $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/v9_soa$(EXE): src/stretch/soa/v9_soa.c src/stageA_plus/fast_parser.c src/common/platform.c src/common/result.c src/common/fixed_point.c | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -DENGINE_BUILD_FLAGS=\"$(OPT)-SoA\" $(filter %.c,$^) $(LDFLAGS) -lm -o $@
 $(BUILD)/neon_scalar.o: src/stretch/neon/neon_scalar.c | $(BUILD)
@@ -460,7 +468,7 @@ $(BUILD)/neon_scalar.o: src/stretch/neon/neon_scalar.c | $(BUILD)
 $(BUILD)/neon_sum$(EXE): src/stretch/neon/neon_sum.c src/common/platform.c $(BUILD)/neon_scalar.o | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(NEON_CFLAGS) src/stretch/neon/neon_sum.c src/common/platform.c $(BUILD)/neon_scalar.o $(LDFLAGS) -lm -o $@
 rival: $(BUILD)/rival_sweep$(EXE) | results/rival
-	$(BUILD)/rival_sweep$(EXE) --file $(FILE) --output results/rival/sweep.csv --member $(MEMBER)
+	$(BUILD)/rival_sweep$(EXE) --file $(FILE) --short $(SHORT) --long $(LONG) --output results/rival/sweep.csv --member $(MEMBER)
 plot-rival: rival | results/plots
 ifeq ($(strip $(GNUPLOT_PATH)),)
 	@echo "SKIPPED: gnuplot not found"

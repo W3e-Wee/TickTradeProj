@@ -9,6 +9,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef DEFAULT_SHORT_WINDOW
+#define DEFAULT_SHORT_WINDOW 30 /* Group 05 default; Make may override it. */
+#endif
+#ifndef DEFAULT_LONG_WINDOW
+#define DEFAULT_LONG_WINDOW 60 /* Group 05 default; Make may override it. */
+#endif
 #ifndef ENGINE_BUILD_FLAGS
 #define ENGINE_BUILD_FLAGS "Makefile defaults"
 #endif
@@ -189,7 +195,7 @@ static int soa_write_bench_csv(const char *path, const char *member,
 int main(int argc, char **argv)
 {
     const char *path = NULL, *csv_path = NULL, *member = "member";
-    int short_window = 10, long_window = 60;
+    int short_window = DEFAULT_SHORT_WINDOW, long_window = DEFAULT_LONG_WINDOW;
     unsigned repeats = 1;
     for (int i = 1; i < argc; ++i) {
         if (i + 1 >= argc) return 2;
